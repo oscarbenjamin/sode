@@ -7,9 +7,8 @@ import os.path
 
 import numpy as np
 
-from sode import SODE, SODENetwork
+from sode import SODE, SODENetwork, Script
 from graphviz import GraphParser
-from script import Script
 
 
 class Region(SODENetwork):
