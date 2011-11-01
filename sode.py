@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 #
 # Author: Oscar Benjamin
 # Date: 08 Mar 2011
