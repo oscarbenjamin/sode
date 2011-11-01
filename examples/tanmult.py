@@ -1,0 +1,38 @@
+#!/usr/bin/env python
+#
+# Author: Oscar Benjamin
+# Date: 11 Mar 2011
+#
+# Example of a script to investigate an SODE with an exactly known solution.
+
+
+import numpy as np
+
+from sode import SODE, Script
+
+
+class TangentMultiplicative(SODE):
+    """Nonlinear 1-D SODE with solutions in tan(Wt)
+
+        dx(t) = a^2 x(t) (1 + x(t)^2) dt + a (1 + x(t)^2) dW(t)
+
+    This SODE has the exact solution:
+
+        x(t) = tan( a W(t) + arctan(x(0)) )
+    """
+    variables = (('x', 0),)
+    parameters = (('a', 0.01),)
+    def drift(self, a, x, t):
+        return self.a**2 * x * (1 + x**2)
+    def diffusion(self, b, x, t):
+        return self.a * (1 + x**2)
+    def exact(self, x0, t, Wt):
+        return np.tan(self.a*Wt + np.arctan(x0))
+
+
+
+
+if __name__ == "__main__":
+    import sys
+    script = Script(TangentMultiplicative)
+    script.main(argv=sys.argv[1:])
