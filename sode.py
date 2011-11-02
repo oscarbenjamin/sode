@@ -33,11 +33,14 @@ def BrownianIncrements(dt, nsamples=1, nvars=1):
 
     Usage:
     >>> # Create a single Brownian increment for a 1-d SODE
+    >>> dt = 0.001
     >>> dWs = BrownianIncrements(dt)
     >>> # Create nsamples increments for an 1-d SODE covering a period of time
     >>> # given by dt * nsamples.
+    >>> nsamples = 1000
     >>> dWs = BrownianIncrements(dt, nsamples)
     >>> # Create nsamples increments for an nvars-dimensional SODE
+    >>> nvars = 4
     >>> dWs = BrownianIncrements(dt, nsamples, nvars)
 
     Arguments:
@@ -63,12 +66,19 @@ class BrownianMotion(object):
     compared with the exact solution using the same Brownian path, e.g.:
 
     >>> # Create Brownian path and determine exact solution
-    >>> bm = BrownianMotion(t1, N, dt)
-    >>> Xexact = system.exact(x0, bm.t, bm.Wt)
+    >>> system = WeinerSODE()
+    >>> x0 = system.get_x0() # or just: x0 = [0]
+    >>> t1 = 0
+    >>> t2 = 1
+    >>> dt = 0.001
+    >>> nsamples = int((t2 - t1)/dt)
+    >>> bm = BrownianMotion(t1, dt, nsamples, system.nvars)
+    >>> xt_exact = system.exact(x0, bm.t, bm.Wt)
     >>> # Find numerical solution with same Brownian path
-    >>> Xnumerical, t = system.solve_bm(x0, bm)
+    >>> xt_numerical = system.solve_bm(x0, bm)
     >>> # Compare
-    >>> print max(abs(Xexact - Xnumerical))
+    >>> print max(abs(xt_exact - xt_numerical).flat)
+    0.0
     """
     def __init__(self, t1, dt, nsamples=None, nvars=None, dWs=None):
         """Realisation of a Brownian process"""
@@ -84,9 +94,10 @@ class BrownianMotion(object):
             dWs = BrownianIncrements(dt, nsamples, nvars)
 
         # Create t and Wt vectors
-        t = t1 + dt * np.arange(nsamples + 1)
         Wt = np.zeros((nsamples + 1, nvars))
         Wt[1:, :] = np.cumsum(dWs, axis=0)
+        t = t1 + dt * np.arange(nsamples + 1)
+        t.resize(Wt.shape)
 
         # Attributes
         self.nvars = nvars
@@ -314,7 +325,12 @@ class SODE(object):
         single integration step (use solve() to generate a full timeseries)
 
         Usage:
-        >>> x2, t2 = self.solveEM(x1, t1, dt, dW)
+        >>> system = WeinerSODE()
+        >>> x1 = system.get_x0()
+        >>> t1 = 0
+        >>> dt = 0.001
+        >>> dW = BrownianIncrements(dt, 1, system.nvars)
+        >>> x2, t2 = system.solveEM(x1, t1, dt, dW)
 
         Arguments:
         xi :    Vector specifying the state of the system at ti.
@@ -364,7 +380,12 @@ class SODE(object):
         Wilkie and published in Physical Review E. 2004.
 
         Usage:
-        >>> x2, t2 = self.solveRK4_additive(x1, t1, dt, dW)
+        >>> system = WeinerSODE()
+        >>> x1 = system.get_x0()
+        >>> t1 = 0
+        >>> dt = 0.001
+        >>> dW = BrownianIncrements(dt, 1, system.nvars)
+        >>> x2, t2 = system.solveRK4_additive(x1, t1, dt, dW)
 
         Arguments:
         x1 :    Vector specifying the state of the system at t1.
@@ -432,8 +453,10 @@ class SODE(object):
         """Integrate SODEs numerically to obtain solution at times t.
 
         Usage:
-        >>> Xt = sys.solve(x0, t, dtmax)
-        >>> Xt = sys.solve(x0, t)
+        >>> system = WeinerSODE()
+        >>> x1 = system.get_x0()
+        >>> t = np.arange(0, 1, 1e-2)
+        >>> Xt = system.solve(x1, t, dtmax=1e-3)
 
         Arguments:
         x0    : Vector specifying the state of the system as t[0]. get_x0()
@@ -491,18 +514,22 @@ class SODE(object):
         """Integrate SODEs with fixed step and provided noise realisation.
 
         Usage:
-        >>> x2 = sys.solve(x1, t1, t2, W)
+        >>> # Create an SODE instance
+        >>> system = WeinerSODE()
+        >>> t1 = 0
+        >>> t2 = 1
+        >>> dt = 0.001
+        >>> nsamples = int((t2 - t1) / dt)
+        >>> bm = BrownianMotion(t1, dt, nsamples, system.nvars)
+        >>> x2 = system.solve_bm(system.get_x0(), bm)
 
         Arguments:
         x0 :    Vector specifying the state of the system as t[0]. get_x0()
                 returns the default initial conditions defined for the
                 equations.
-        t1 :    Time corresponding to initial condition x0.
-        t2 :    Time at end of integration.
-        W  :    2-dimensional array specifying the values of the Brownian
-                motions at times [t1, t1+dt, d0+2*dt, ...]. Each row of W,
-                W[n, :], represents the value of the Brownian motions at time
-                t[n].
+        bm :    BrownianMotion instance. Integration is performed with the
+                increments from bm. bm is also used to establish the interval
+                of integration and the integration step.
         method: 'EM' or 'RK4'. Specifies the elementary integration method.
                 'RK4' is valid only for SODEs with additive noise.
 
@@ -546,8 +573,19 @@ class SODE(object):
         """Load solution t, Xt from input-file fin
 
         Usage:
-        >>> t, Xt = sys1.load_csv(open('sys1_1.txt', 'r'))
-        >>> t, Xt = sys1.load_csv(open('sys1_1.txt', 'r'), parameters=True)
+        >>> # Create a system, generate a solution and save it
+        >>> system = WeinerSODE()
+        >>> x1 = system.get_x0()
+        >>> t = np.arange(0, 1, 1e-2)
+        >>> Xt = system.solve(x1, t, dtmax=1e-3)
+        >>> system.save_csv(t, Xt, open('sys1_1.txt', 'w'))
+        >>> # Create a new system
+        >>> system = WeinerSODE()
+        >>> t, Xt = system.load_csv(open('sys1_1.txt', 'r'))
+        >>> # Also read parameter values
+        >>> t, Xt, ret = system.load_csv(open('sys1_1.txt', 'r'), parameters=True)
+        >>> print ret
+        ({}, ['mu=0.0', 'sigma=1.0', 'x0=0.0'])
 
         If parameters is True the file will be checked for the appropriate
         header information. It will be checked for consistency against this
@@ -618,7 +656,11 @@ class SODE(object):
         """Save solution t, Xt to output-file fout
 
         Usage:
-        >>> sys1.save_csv(t, Xt, open('sys1_1.txt', 'w'))
+        >>> system = WeinerSODE()
+        >>> x1 = system.get_x0()
+        >>> t = np.arange(0, 1, 1e-2)
+        >>> Xt = system.solve(x1, t, dtmax=1e-3)
+        >>> system.save_csv(t, Xt, open('sys1_1.txt', 'w'))
 
         Writes the solution to fout in csv format where lines beginning with
         '#' are comments. Lines beginning with '##' are used to write
@@ -846,64 +888,63 @@ class SODENetwork(SODE):
             sys.diffusion(b, x, t)
         return b
 
-# A Script instance is a callable that can be used to quickly create a
-# script to investigate a particular SODE subclass.
-#
-# There are two ways to use Script. One is to create a Script instance with
-# an SODE subclass as argument. The other is to override the make_sode
-# method. This method is called with all command line positional and option
-# arguments as *args and **kwargs respectively. These two methods are
-# illustrated below.
-#
-# Example script:
-# -----------------------------------
-# Define a simple system
-# class MySODE(SODE):
-#   def f(self, x, t):
-#       return x
-#   def g(self, x, t):
-#       return t
-#
-# Use script main if run as a script
-# if __name__ == "__main__":
-#    import sys
-#    from script import Script
-#    script = Script(MySODE)
-#    script(argv=sys.argv[1:])
-## -----------------------------------
-#
-#A more complicated example:
-## -----------------------------------
-## Define several systems
-#class MySODE1(SODE):
-#    ...
-#class MySODE2(SODE):
-#    ...
-#
-## Collect together in a dict
-#SYSTEMS = {'sys1':MySODE1, 'sys2':MySODE2, ...}
-#
-#if __name__ == "__main__":
-#    import sys
-#    from script import Script
-#
-#    # Override Script to choose system type
-#    class MyScript(Script):
-#        usage = '%name [OPTS] SYSNAME [PAR1=VAL1 ...]
-#        def make_sode(self, sysname, *args, **opts):
-#            if sysname not in SYSTEMS:
-#                msg = "System name should be one of {0}"
-#                raise ValueError(msg.format(', '.join(SYSTEMS)))
-#            return SYSTEMS[sysname](*args)
-#
-#    # Actually run as a script
-#    script = MyScript()
-#    script(argv=sys.argv[1:])
-## -----------------------------------
 
 
 class Script(object):
-    """Class for quickly makeing scripts out of SODE objects"""
+    """A Script instance is a callable that can be used to quickly create a
+    script to investigate a particular SODE subclass.
+
+    There are two ways to use Script. One is to create a Script instance with
+    an SODE subclass as argument. The other is to override the make_sode
+    method. This method is called with all command line positional and option
+    arguments as *args and **kwargs respectively. These two methods are
+    illustrated below.
+
+    Example script:
+    -----------------------------------
+    Define a simple system
+    class MySODE(SODE):
+      def f(self, x, t):
+          return x
+      def g(self, x, t):
+          return t
+
+    Use script main if run as a script
+    if __name__ == "__main__":
+        import sys
+        from script import Script
+        script = Script(MySODE)
+        script(argv=sys.argv[1:])
+    # -----------------------------------
+
+    A more complicated example:
+    # -----------------------------------
+    # Define several systems
+    class MySODE1(SODE):
+        ...
+    class MySODE2(SODE):
+        ...
+
+    # Collect together in a dict
+    SYSTEMS = {'sys1':MySODE1, 'sys2':MySODE2, ...}
+
+    if __name__ == "__main__":
+        import sys
+        from script import Script
+
+        # Override Script to choose system type
+        class MyScript(Script):
+           usage = '%name [OPTS] SYSNAME [PAR1=VAL1 ...]
+           def make_sode(self, sysname, *args, **opts):
+               if sysname not in SYSTEMS:
+                   msg = "System name should be one of {0}"
+                   raise ValueError(msg.format(', '.join(SYSTEMS)))
+               return SYSTEMS[sysname](*args)
+
+        # Actually run as a script
+        script = MyScript()
+        script(argv=sys.argv[1:])
+    """
     def __init__(self, SYSTYPE=None):
         """Stores SYSTYPE as the SODE subclass for this instance"""
         # Store SYSTYPE if provided otherwise assume that make_sode has been
@@ -1268,6 +1309,7 @@ class Script(object):
             from matplotlib.pyplot import show
             show()
 
+
 class MultiScript(Script):
     """Subclass Script to handle multiple SODE classes"""
     def __init__(self, SYSDICT):
@@ -1293,32 +1335,30 @@ class MultiScript(Script):
         print ', '.join([k for k in self.SYSDICT if k is not None])
 
 
+# Needed for the doctests
+class WeinerSODE(SODE):
+    """Weiner process with drift coeff. mu and diffusion coeff. sigma
+
+        dx(t) = mu dt + sigma dW(t)
+
+    This trivial SODE has the exact solution:
+
+        x(t) = x(0) + mu t + sigma W(t)
+    """
+    variables = (('x', 0),)
+    parameters = (('mu', 0), ('sigma', 1))
+
+    def drift(self, a, x, t):
+        return self.mu
+
+    def diffusion(self, b, x, t):
+        return self.sigma
+
+    def exact(self, x0, t, Wt):
+        return (x0 + self.mu * t) + self.sigma * Wt
 
 
 # Quick test suite to demonstrate usage of sode.py and script.py
 if __name__ == "__main__":
-
-    # Define an example SODE subclass
-
-    class LinearSODE(SODE):
-        """1-D linear SODE with equation:
-
-        dx = - beta x dt + alpha dW
-        """
-        variables = (('x', 1.0),)
-        parameters = (('beta', 1.0), ('alpha', 1.0))
-
-        # drift coefficient (deterministic derivative)
-        def drift(self, a, x, t):
-            a[self.x] = - self.beta * x[self.x]
-            return a
-
-        # diffusion coefficient (noise amplitude)
-        def diffusion(self, b, x, t):
-            b[self.x] = self.alpha
-            return b
-
-    import sys
-    script = Script(LinearSODE)
-    script.main(argv=sys.argv[1:])
-
+    import doctest
+    doctest.testmod()
