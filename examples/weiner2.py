@@ -12,7 +12,7 @@
 from sode import SODE, Script
 
 
-class Weiner2SODE(SODE):
+class Weiner2(SODE):
     """Weiner process with drift coeff. mu and diffusion coeff. sigma
 
         dx(t) = mu dt + sigma dW(t)
@@ -57,5 +57,5 @@ if __name__ == "__main__":
     # The Script class imported from sode allows us to easily turn this file
     # into a script that can be used to investigate the SODE numerically.
     import sys
-    script = Script(Weiner2SODE)
+    script = Script(Weiner2)
     script.main(argv=sys.argv[1:])

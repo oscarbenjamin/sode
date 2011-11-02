@@ -16,7 +16,7 @@
 from sode import SODE, Script
 
 
-class WeinerSODE(SODE):
+class Weiner(SODE):
     """Weiner process with drift coeff. mu and diffusion coeff. sigma
 
         dx(t) = mu dt + sigma dW(t)
@@ -27,7 +27,7 @@ class WeinerSODE(SODE):
     """
     # SODE subclasses must define the variables and parameters of the system
     # and also the drift and diffusion coefficients as functions of the state
-    # x and time t. When a WeinerSODE instance is created, the parameters
+    # x and time t. When a Weiner instance is created, the parameters
     # values are stored as atributes of self. Note that keyword arguments used
     # when creating an SODE instance can alter parameters from their default
     # values provided in the class definition.
@@ -57,5 +57,5 @@ if __name__ == "__main__":
     # The Script class imported from sode allows us to easily turn this file
     # into a script that can be used to investigate the SODE numerically.
     import sys
-    script = Script(WeinerSODE)
+    script = Script(Weiner)
     script.main(argv=sys.argv[1:])

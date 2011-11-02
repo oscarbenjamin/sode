@@ -17,8 +17,6 @@ import sys
 import numpy as np
 from numpy.random import randn
 
-from opster import command
-
 
 class SODESubclassError(NotImplementedError):
     """Exception raised by subclasses of SODE when the required subclass
@@ -67,7 +65,7 @@ class BrownianMotion(object):
     compared with the exact solution using the same Brownian path, e.g.:
 
     >>> # Create Brownian path and determine exact solution
-    >>> system = WeinerSODE()
+    >>> system = Weiner()
     >>> x0 = system.get_x0() # or just: x0 = [0]
     >>> t1 = 0
     >>> t2 = 1
@@ -326,7 +324,7 @@ class SODE(object):
         single integration step (use solve() to generate a full timeseries)
 
         Usage:
-        >>> system = WeinerSODE()
+        >>> system = Weiner()
         >>> x1 = system.get_x0()
         >>> t1 = 0
         >>> dt = 0.001
@@ -381,7 +379,7 @@ class SODE(object):
         Wilkie and published in Physical Review E. 2004.
 
         Usage:
-        >>> system = WeinerSODE()
+        >>> system = Weiner()
         >>> x1 = system.get_x0()
         >>> t1 = 0
         >>> dt = 0.001
@@ -454,7 +452,7 @@ class SODE(object):
         """Integrate SODEs numerically to obtain solution at times t.
 
         Usage:
-        >>> system = WeinerSODE()
+        >>> system = Weiner()
         >>> x1 = system.get_x0()
         >>> t = np.arange(0, 1, 1e-2)
         >>> Xt = system.solve(x1, t, dtmax=1e-3)
@@ -516,7 +514,7 @@ class SODE(object):
 
         Usage:
         >>> # Create an SODE instance
-        >>> system = WeinerSODE()
+        >>> system = Weiner()
         >>> t1 = 0
         >>> t2 = 1
         >>> dt = 0.001
@@ -575,16 +573,16 @@ class SODE(object):
 
         Usage:
         >>> # Create a system, generate a solution and save it
-        >>> system = WeinerSODE()
+        >>> system = Weiner()
         >>> x1 = system.get_x0()
         >>> t = np.arange(0, 1, 1e-2)
         >>> Xt = system.solve(x1, t, dtmax=1e-3)
-        >>> system.save_csv(t, Xt, open('sys1_1.txt', 'w'))
+        >>> system.save_csv(t, Xt, open('sys1_1.csv', 'w'))
         >>> # Create a new system
-        >>> system = WeinerSODE()
-        >>> t, Xt = system.load_csv(open('sys1_1.txt', 'r'))
+        >>> system = Weiner()
+        >>> t, Xt = system.load_csv(open('sys1_1.csv', 'r'))
         >>> # Also read parameter values
-        >>> t, Xt, ret = system.load_csv(open('sys1_1.txt', 'r'), parameters=True)
+        >>> t, Xt, ret = system.load_csv(open('sys1_1.csv', 'r'), parameters=True)
         >>> print ret
         ({}, ['mu=0.0', 'sigma=1.0', 'x0=0.0'])
 
@@ -657,11 +655,11 @@ class SODE(object):
         """Save solution t, Xt to output-file fout
 
         Usage:
-        >>> system = WeinerSODE()
+        >>> system = Weiner()
         >>> x1 = system.get_x0()
         >>> t = np.arange(0, 1, 1e-2)
         >>> Xt = system.solve(x1, t, dtmax=1e-3)
-        >>> system.save_csv(t, Xt, open('sys1_1.txt', 'w'))
+        >>> system.save_csv(t, Xt, open('sys1_1.csv', 'w'))
 
         Writes the solution to fout in csv format where lines beginning with
         '#' are comments. Lines beginning with '##' are used to write
@@ -1337,7 +1335,7 @@ class MultiScript(Script):
 
 
 # Needed for the doctests
-class WeinerSODE(SODE):
+class Weiner(SODE):
     """Weiner process with drift coeff. mu and diffusion coeff. sigma
 
         dx(t) = mu dt + sigma dW(t)
@@ -1363,3 +1361,5 @@ class WeinerSODE(SODE):
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
+    import os
+    os.remove('sys1_1.csv')
