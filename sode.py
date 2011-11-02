@@ -1,3 +1,4 @@
+# (c) Oscar Benjamin, 2011, under terms of the new BSD license
 #
 # Author: Oscar Benjamin
 # Date: 08 Mar 2011
