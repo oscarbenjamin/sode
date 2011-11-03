@@ -39,19 +39,6 @@
     #define TWOPI 6.2831853071796
 #endif
 
-/* Sort this out. Don't want these macros. */
-float nfix(void);
-#define SHR3 (jz=jsr, jsr^=(jsr<<13), jsr^=(jsr>>17), jsr^=(jsr<<5),jz+jsr)
-#define UNI (.5 + (signed) SHR3*.2328306e-9)
-#define IUNI SHR3
-#define RNOR (hz=SHR3, iz=hz&127, (fabs(hz)<kn[iz])? hz*wn[iz] : nfix())
-#define REXP (jz=SHR3, iz=jz&255, (    jz <ke[iz])? jz*we[iz] : efix())
-static unsigned long jz,jsr=123456789;
-static long hz;
-static unsigned long iz, kn[128], ke[256];
-static float wn[128],fn[128], we[256],fe[256];
-
-
 /* Main program routines */
 int print_help(char* argv[], char* msg);
 int print_weiner();
@@ -65,7 +52,7 @@ unsigned int initial_seed(void);
 rint_type xorshift(void);
 double random(void);
 double randn_boxmuller(void);
-
+double rnor(void);
 
 int main(int argc, char *argv[])
 {
@@ -75,10 +62,8 @@ int main(int argc, char *argv[])
     /* Initialise random seed and prepare for rng generation */
     init_rngs();
 
-    for (i=0; i < 100000000; i++) {
-        randn_boxmuller();
-    }
-        //printf("%.15f\n", RNOR);
+    for (i=0; i < 1000000; i++)
+        printf("%.15f\n", rnor());
     return 0;
 
     if(argc == 1)
@@ -284,6 +269,11 @@ double randn_boxmuller() {
  * Software.
  */
 
+static unsigned long jz,jsr=123456789;
+static long hz;
+static unsigned long iz, kn[128], ke[256];
+static float wn[128],fn[128], we[256],fe[256];
+
 /* nfix() generates variates from the residue when rejection in RNOR occurs. */
 
 float nfix(void)
@@ -311,6 +301,16 @@ float nfix(void)
 }
 
 /*--------This procedure sets the seed and creates the tables------*/
+
+double rnor(void) {
+    jz=jsr;
+    jsr^=(jsr<<13);
+    jsr^=(jsr>>17);
+    jsr^=(jsr<<5);
+    hz = jz+jsr;
+    iz = hz & 127;
+    return (fabs(hz) < kn[iz]) ? hz * wn[iz] : nfix();
+}
 
 void ziggurat_seed(unsigned long jsrseed)
 {
