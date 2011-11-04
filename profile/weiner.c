@@ -13,6 +13,7 @@
 /* For generating standard normals. */
 #include "randnorm.h"
 #include "examples.h"
+#include "solvers.h"
 
 /* Struct to hold the data returned by parse_args */
 typedef struct InputOptionsStruct {

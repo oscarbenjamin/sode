@@ -6,10 +6,14 @@
 #ifndef _EXAMPLES_H
 #define _EXAMPLES_H
 
+/* for size_t */
+#include <stddef.h>
 
 /* Struct to define the features of the system */
 typedef struct SysInfoStruct {
     char *sysname;
+    const double *x0;
+    const size_t nvars;
 } SysInfo;
 
 /* Set of systems to choose from */
