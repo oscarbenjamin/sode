@@ -67,9 +67,9 @@ void tanmult_diffusion(const double *x, const double t1, double *b) {
 
 /* Set of systems to choose from */
 SysInfo example_systems[] = {
-    {"weiner" ,  weiner_x0, COUNT_OF( weiner_x0), &weiner_drift, &weiner_diffusion},
-    {"weiner2",  weiner_x0, COUNT_OF( weiner_x0), &weiner_drift, &weiner_diffusion},
-    {  "lin2d",   lin2d_x0, COUNT_OF(  lin2d_x0), &lin2d_drift, &lin2d_diffusion},
+    { "weiner",  weiner_x0, COUNT_OF( weiner_x0),  &weiner_drift,  &weiner_diffusion},
+    {"weiner2",  weiner_x0, COUNT_OF( weiner_x0),  &weiner_drift,  &weiner_diffusion},
+    {  "lin2d",   lin2d_x0, COUNT_OF(  lin2d_x0),   &lin2d_drift,   &lin2d_diffusion},
     {"linmult", linmult_x0, COUNT_OF(linmult_x0), &linmult_drift, &linmult_diffusion},
     {"sinmult", sinmult_x0, COUNT_OF(sinmult_x0), &sinmult_drift, &sinmult_diffusion},
     {"tanmult", tanmult_x0, COUNT_OF(tanmult_x0), &tanmult_drift, &tanmult_diffusion},
