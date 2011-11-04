@@ -32,7 +32,7 @@ int parse_args(int argc, char *argv[], InputOptions *opts);
 
 #define SOLVE_FAILED 0
 #define SOLVE_SUCCEEDED 1
-int solve_sode(InputOptions *opts);
+int print_sode(InputOptions *opts);
 
 int main(int argc, char *argv[])
 {
@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
         return 1;
 
     /* Actually solve and write the result to stdout */
-    solve_sode(&opts);
+    print_sode(&opts);
 
     return 0;
 }
@@ -109,28 +109,26 @@ int parse_args(int argc, char *argv[], InputOptions *opts) {
     return ARGUMENTS_GOOD;
 }
 
-/* Solve the equations specified by the user */
-int solve_sode(InputOptions *opts) {
-    /*printf("You have requested to solve '%s'\n", opts->sysinfo->sysname);
-    printf("Will no solve from %f to %f in steps of %f printing every %f\n",
-            opts->t1, opts->t2, opts->dtmax, opts->dtout);*/
-    double dt = opts->dtmax;
-    SysInfo *sys = opts->sysinfo;
-    size_t nsteps = (size_t)ceil((opts->t2 - opts->t1)/dt);
-    size_t nvars = sys->nvars;
-    size_t v, s;
-    double x[nvars];
-    double t = opts->t1;
+void outfunc(const double *x, const double t, const size_t nvars)
+{
+    size_t v;
+    printf("%f", t);
     for(v=0; v<nvars; v++)
-        x[v] = sys->x0[v];
-    for(s=0; s<nsteps; s++) {
-        solve_EM(sys->drift, sys->diffusion, sys->nvars, x, t, dt, x);
-        t += dt;
-        printf("%f", t);
-        for(v=0; v<nvars; v++)
-            printf(", %f", x[v]);
-        printf("\n");
-    }
+        printf(", %f", x[v]);
+    printf("\n");
+}
+
+/* Solve the equations specified by the user */
+int print_sode(InputOptions *opts) {
+
+   /*         void solve_sode(vecfield drift, vecfield diffusion, size_t nvars,
+                            const double *x0, const double t0,
+                            const double dtmax, const double dtout,
+                            outputvec outfunc) {*/
+
+    SysInfo *sys = opts->sysinfo;
+    solve_sode(sys->drift, sys->diffusion, sys->nvars, sys->x0,
+               opts->t1, opts->t2, opts->dtmax, opts->dtout, outfunc);
     return SOLVE_SUCCEEDED;
 }
 
