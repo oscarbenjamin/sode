@@ -13,19 +13,35 @@
 /* For generating standard normals. */
 #include "randnorm.h"
 
-/* Enumerate the possible systems we can define */
-typedef enum {LINEAR2D, LINEARMULT, SINMULT, TANMULT, WEINER, WEINER2} SysType;
+/* Struct to define the features of the system */
+typedef struct SysInfoStruct {
+    char *sysname;
+} SysInfo;
+
+/* Set of systems to choose from */
+SysInfo example_systems[] = {
+    {"weiner"     },
+    {"linear2d"   },
+    {"linearmult" },
+    {"sinmult"    },
+    {"tanmult"    },
+    {"weiner"     },
+    {"weiner2"    },
+};
+const unsigned int num_systems =
+        sizeof(example_systems) / sizeof(example_systems[0]);
 
 /* Struct to hold the data returned by parse_args */
 #define INVALID_ARGUMENTS 0
 #define GOOD_ARGUMENTS 1
 typedef struct InputOptionsStruct {
-    SysType systype;
+    SysInfo *sysinfo;
     double t1;
     double t2;
     double dtmax;
     double dtout;
 } InputOptions;
+
 
 /* Function used to process the command line args. */
 int parse_args(int argc, char *argv[], InputOptions *opts);
@@ -47,7 +63,7 @@ int print_help(int argc, char *argv[], char *errmsg)
 {
     if(errmsg != NULL)
         fprintf(stderr, "%s\n", errmsg);
-    printf("usage: %s SYSNUM\n", argv[0]);
+    printf("usage: %s SYSNUM T1 T2 DTMAX DTOUT\n", argv[0]);
     printf("\n");
     printf("Numerically solve the stochastic ordinary differential\n");
     printf("equation representing a Weiner process.\n");
@@ -61,16 +77,43 @@ int invalid_arguments(int argc, char *argv[], char *errmsg) {
 
 /* Used by main to process the input arguments */
 int parse_args(int argc, char *argv[], InputOptions *opts) {
+    int n;
+    char *sysstr, *t1str, *t2str, *dtmaxstr, *dtoutstr;
+
     /* Check the number of arguments first */
-    if(argc != 1 + 1)
+    if(argc != 5 + 1)
         return print_help(argc, argv, "Wrong number of arguments");
 
-    /* Check the arguments in order */
-    argv++;
-    if(!strcmp(*argv, "weiner"))
-        opts->systype = WEINER;
-    else
-        return invalid_arguments(argc, argv, "Unrecognised sysname");
+    /* Separate into named strings */
+    sysstr = argv[1];
+    t1str = argv[2];
+    t2str = argv[3];
+    dtmaxstr = argv[4];
+    dtoutstr = argv[5];
+
+    /* Check for the system name */
+    opts->sysinfo = NULL;
+    for(n=0; n<num_systems; n++)
+        if(!strcmp(example_systems[n].sysname, sysstr))
+            opts->sysinfo = &example_systems[n];
+    if(opts->sysinfo == NULL)
+        return invalid_arguments(argc, argv, "Unrecognised SYSNAME");
+
+    /* Parse numeric arguments */
+
+    if(!sscanf(t1str, "%lf", &opts->t1))
+        return invalid_arguments(argc, argv, "Unable to parse T1");
+
+    if(!sscanf(t2str, "%lf", &opts->t2))
+        return invalid_arguments(argc, argv, "Unable to parse T2");
+
+    if(!sscanf(dtmaxstr, "%lf", &opts->dtmax))
+        return invalid_arguments(argc, argv, "Unable to parse DTMAX");
+
+    if(!sscanf(dtoutstr, "%lf", &opts->dtout))
+        return invalid_arguments(argc, argv, "Unable to parse DTOUT");
+
+    /* Indicate success */
     return GOOD_ARGUMENTS;
 }
 
