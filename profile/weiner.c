@@ -111,9 +111,26 @@ int parse_args(int argc, char *argv[], InputOptions *opts) {
 
 /* Solve the equations specified by the user */
 int solve_sode(InputOptions *opts) {
-    printf("You have requested to solve '%s'\n", opts->sysinfo->sysname);
+    /*printf("You have requested to solve '%s'\n", opts->sysinfo->sysname);
     printf("Will no solve from %f to %f in steps of %f printing every %f\n",
-            opts->t1, opts->t2, opts->dtmax, opts->dtout);
+            opts->t1, opts->t2, opts->dtmax, opts->dtout);*/
+    double dt = opts->dtmax;
+    SysInfo *sys = opts->sysinfo;
+    size_t nsteps = (size_t)ceil((opts->t2 - opts->t1)/dt);
+    size_t nvars = sys->nvars;
+    size_t v, s;
+    double x[nvars];
+    double t = opts->t1;
+    for(v=0; v<nvars; v++)
+        x[v] = sys->x0[v];
+    for(s=0; s<nsteps; s++) {
+        solve_EM(sys->drift, sys->diffusion, sys->nvars, x, t, dt, x);
+        t += dt;
+        printf("%f", t);
+        for(v=0; v<nvars; v++)
+            printf(", %f", x[v]);
+        printf("\n");
+    }
     return SOLVE_SUCCEEDED;
 }
 
@@ -132,9 +149,10 @@ int print_weiner()
     double t1=0;
     double t2=100;
     double dt=0.0001;
-    double sqrtdt=sqrt(dt);
+    double sqrtdt = sqrt(dt);
 
     int nsteps=(int) ceil((t2 - t1) / dt);
+
     int i;
     double x=x1;
     double t=t1;
