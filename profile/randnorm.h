@@ -5,8 +5,8 @@
  *
  * randnorm exports the MACROS:
  *  (1) RANDNORM_SHR3 - to generate uniform random integers in [0, 2^32]
- *  (2) RANDNORM_UNIF - to generate uniform random floats in [0, 1]
- *  (3) RANDNORM_NORMAL - to generate (standard) normal floats.
+ *  (2) RANDNORM_UNIF - to generate uniform random doubles in [0, 1]
+ *  (3) RANDNORM_NORMAL - to generate (standard) normal doubles.
  *
  * Before these MACROS can be used the function randnorm_seed() must be called to
  * generate the random seed and initialise the data structures used for
@@ -21,11 +21,11 @@
 extern unsigned long randnorm_jz, randnorm_jsr;
 extern long randnorm_hz;
 extern unsigned long randnorm_iz, randnorm_kn[128];
-extern float randnorm_wn[128];
+extern double randnorm_wn[128];
 
 /* Exported functions */
 void randnorm_seed_ziggurat(unsigned long jsrseed);
-float randnorm_nfix(void); /* Needed by RANDNORM_NORMAL */
+double randnorm_nfix(void); /* Needed by RANDNORM_NORMAL */
 double randnorm_boxmuller(void);
 
 /* Use this so that randnorm_seed chosses its own seed */

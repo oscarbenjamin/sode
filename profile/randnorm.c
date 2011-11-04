@@ -33,7 +33,7 @@
 unsigned long randnorm_jz, randnorm_jsr;
 long randnorm_hz;
 unsigned long randnorm_iz, randnorm_kn[128];
-float randnorm_wn[128],randnorm_fn[128];
+double randnorm_wn[128],randnorm_fn[128];
 
 /*
  * First, get a good initial seed. If possible randnorm_seed attempts to use
@@ -133,10 +133,10 @@ double randnorm_boxmuller() {
  * RANDNORM_NORMAL occurs.
  */
 
-float randnorm_nfix(void)
+double randnorm_nfix(void)
 {
-    const float r = 3.442620f;     /* The start of the right tail */
-    static float x, y;
+    const double r = 3.442620;     /* The start of the right tail */
+    static double x, y;
     for(;;)
     {
         x=randnorm_hz*randnorm_wn[randnorm_iz];
