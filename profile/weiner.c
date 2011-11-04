@@ -6,6 +6,8 @@
  */
 
 #include <stdio.h>
+#include <math.h>
+#include <time.h>
 
 /* For generating standard normals. */
 #include "randnorm.h"
@@ -17,14 +19,9 @@ int print_weiner();
 int main(int argc, char *argv[])
 {
     int systype;
-    int i;
 
     /* Initialise random seed and prepare for rng generation */
     randnorm_seed(RANDNORM_SEED_PID_TIME);
-
-    for (i=0; i < 1000000; i++)
-        printf("%.15f\n", RANDNORM_NORMAL);
-    return 0;
 
     if(argc == 1)
         return print_help(argv, NULL);
@@ -33,7 +30,6 @@ int main(int argc, char *argv[])
             return print_help(argv, "Cannot parse SYSNUM\n");
         switch(systype){
             case 0:
-                printf("System %d\n", systype);
                 return print_weiner();
             default:
                 return print_help(argv, "Invalid SYSNUM\n");
@@ -54,6 +50,14 @@ int print_help(char *argv[], char *errmsg)
     return 0;
 }
 
+void sprint_time(char *timestr, size_t max) {
+    time_t raw_time;
+    struct tm *timeinfo;
+    time(&raw_time);
+    timeinfo = localtime(&raw_time);
+    strftime(timestr, max, "%a, %d %b %Y %H:%M:%S %z", timeinfo);
+}
+
 int print_weiner()
 {
     double x1=0;
@@ -61,15 +65,19 @@ int print_weiner()
     double t1=0;
     double t2=1;
     double dt=0.01;
+    double sqrtdt=sqrt(dt);
 
-    int nsteps=(int) (t2 - t1) / dt + 1;
+    int nsteps=(int) ceil((t2 - t1) / dt);
     int i;
     double x=x1;
     double t=t1;
-    printf("t, x\n");
+    char timestr[100];
+    sprint_time(timestr, 100);
+    printf("# Created by weiner.c at %s\n", timestr);
+    printf("time, x\n");
     printf("%f, %f\n", t1, x1);
     for(i=0; i<nsteps; i++) {
-        x += alpha * dt + beta * 0;
+        x += alpha * dt + beta * sqrtdt * RANDNORM_NORMAL;
         t += dt;
         printf("%f, %f\n", t, x);
     }
