@@ -12,24 +12,7 @@
 
 /* For generating standard normals. */
 #include "randnorm.h"
-
-/* Struct to define the features of the system */
-typedef struct SysInfoStruct {
-    char *sysname;
-} SysInfo;
-
-/* Set of systems to choose from */
-SysInfo example_systems[] = {
-    {"weiner"     },
-    {"linear2d"   },
-    {"linearmult" },
-    {"sinmult"    },
-    {"tanmult"    },
-    {"weiner"     },
-    {"weiner2"    },
-};
-const unsigned int num_systems =
-        sizeof(example_systems) / sizeof(example_systems[0]);
+#include "examples.h"
 
 /* Struct to hold the data returned by parse_args */
 typedef struct InputOptionsStruct {
