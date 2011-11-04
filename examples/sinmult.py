@@ -14,20 +14,20 @@ from sode import SODE, Script
 class SinusoidalMultiplicative(SODE):
     """Nonlinear 1-D SODE with solutions sinusoidal in Wt
 
-        dx(t) = -(1/2) a^2 x(t) dt + a sqrt(1 - x(t)^2) dW(t)
+        dx(t) = -(1/2) alpha^2 x(t) dt + alpha sqrt(1 - x(t)^2) dW(t)
 
     This equation has the exact solution
 
-        x(t) = sin( a W(t) + arcsin(x(0)) )
+        x(t) = sin( alpha W(t) + arcsin(x(0)) )
     """
     variables = (('x', 0),)
-    parameters = (('a', 0.01),)
-    def drift(self, a, x, t):
-        return - (self.a**2 * x) / 2
+    parameters = (('alpha', 0.01),)
+    def drift(self, alpha, x, t):
+        return - (self.alpha**2 * x) / 2
     def diffusion(self, b, x, t):
-        return self.a * np.sqrt(1 - x**2)
+        return self.alpha * np.sqrt(1 - x**2)
     def exact(self, x0, t, Wt):
-        return np.sin(self.a * Wt + np.arcsin(x0))
+        return np.sin(self.alpha * Wt + np.arcsin(x0))
 
 
 
