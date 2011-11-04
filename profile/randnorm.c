@@ -27,7 +27,13 @@
 #include "randnorm.h"
 
 /* Used in seed initialisation */
-#define RAND_CONG(n) (69069*n+1234567)
+#define RANDNORM_CONG(n) (69069*n+1234567)
+
+/* Global variables used by RANDNORM_ macros */
+unsigned long randnorm_jz, randnorm_jsr;
+long randnorm_hz;
+unsigned long randnorm_iz, randnorm_kn[128];
+float randnorm_wn[128],randnorm_fn[128];
 
 /*
  * First, get a good initial seed. If possible randnorm_seed attempts to use
@@ -66,10 +72,10 @@ unsigned int initial_seed(void) {
     }
     pid = _getpid();
 #endif
-    seed = RAND_CONG(time(NULL));
+    seed = RANDNORM_CONG(time(NULL));
 #if NIX | WINDOWS
-    seed ^= RAND_CONG(pid);
-    seed ^= RAND_CONG(tprec);
+    seed ^= RANDNORM_CONG(pid);
+    seed ^= RANDNORM_CONG(tprec);
 #endif
     return seed;
 }
@@ -85,16 +91,16 @@ unsigned int initial_seed(void) {
  * values, and double count the 0 == 2pi.
  */
 
-double randn_boxmuller() {
+double randnorm_boxmuller() {
     static int i = 1;
     static double u[2] = {0.0, 0.0};
     register double r1, r2, t;
 
     if (i == 1) {
-        t = RAND_UNIF;
+        t = RANDNORM_UNIF;
         t = t ? t : 6.2831853071796;
         r1 = sqrt(-2 * log((double)(t)));
-        r2 = 6.2831853071796 * (double)RAND_UNIF;
+        r2 = 6.2831853071796 * (double)RANDNORM_UNIF;
         u[0] = r1 * sin(r2);
         u[1] = r1 * cos(r2);
         i = 0;
@@ -105,11 +111,6 @@ double randn_boxmuller() {
     return u[i];
 }
 
-unsigned long randnorm_jz, randnorm_jsr;
-long randnorm_hz;
-unsigned long randnorm_iz, randnorm_kn[128];
-float randnorm_wn[128],randnorm_fn[128];
-
 /*
  * Ziggurat algorithm
  *
@@ -117,17 +118,20 @@ float randnorm_wn[128],randnorm_fn[128];
  * http://www.jstatsoft.org/v05/i08/supp/1
  *
  * Combine the code below with the main program in which you want normal or
- * exponential variates. Then use of RAND_NORMAL in any expression will
+ * exponential variates. Then use of RANDNORM_NORMAL in any expression will
  * provide a standard normal variate with mean zero, variance 1. Before using
- * RAND_NORMAL in your main, insert a command such as
- * randnorm_seed_ziggurat(86947731); with your own choice of seed value>0, rather than
- * 86947731. (If you do not invoke randnorm_seed_ziggurat(...) you will get all zeros
- * for RAND_NORMAL.) For details of the method, see Marsaglia and Tsang,
- * "The ziggurat method for generating random variables", Journ.  Statistical
- * Software.
+ * RANDNORM_NORMAL in your main, insert a command such as
+ * randnorm_seed_ziggurat(86947731); with your own choice of seed value>0,
+ * rather than 86947731. (If you do not invoke randnorm_seed_ziggurat(...) you
+ * will get all zeros for RANDNORM_NORMAL.) For details of the method, see
+ * Marsaglia and Tsang, "The ziggurat method for generating random variables",
+ * Journ.  Statistical Software.
  */
 
-/* randnorm_nfix() generates variates from the residue when rejection in RAND_NORMAL occurs. */
+/*
+ * randnorm_nfix() generates variates from the residue when rejection in
+ * RANDNORM_NORMAL occurs.
+ */
 
 float randnorm_nfix(void)
 {
@@ -140,18 +144,18 @@ float randnorm_nfix(void)
         if(randnorm_iz==0)
         {
             do{
-                x=-log(RAND_UNIF)*0.2904764; y=-log(RAND_UNIF);
+                x=-log(RANDNORM_UNIF)*0.2904764; y=-log(RANDNORM_UNIF);
             } while(y+y<x*x);  /* .2904764 is 1/r */
             return (randnorm_hz>0)? r+x : -r-x;
         }
         /* randnorm_iz>0, handle the wedges of other strips */
         if( randnorm_fn[randnorm_iz]
-            + RAND_UNIF*(randnorm_fn[randnorm_iz-1]-randnorm_fn[randnorm_iz])
+            + RANDNORM_UNIF*(randnorm_fn[randnorm_iz-1]-randnorm_fn[randnorm_iz])
                 < exp(-.5*x*x) )
             return x;
 
         /* initiate, try to exit for(;;) for loop*/
-        randnorm_hz=RAND_SHR3;
+        randnorm_hz=RANDNORM_SHR3;
         randnorm_iz=randnorm_hz&127;
         if(fabs(randnorm_hz)<randnorm_kn[randnorm_iz])
             return (randnorm_hz*randnorm_wn[randnorm_iz]);
@@ -167,7 +171,7 @@ void randnorm_seed_ziggurat(unsigned long jsrseed)
     int i;
     randnorm_jsr = 123456789 ^ jsrseed;
 
-    /* Set up tables for RAND_NORMAL */
+    /* Set up tables for RANDNORM_NORMAL */
     q=vn/exp(-.5*dn*dn);
     randnorm_kn[0]=(dn/q)*m1;
     randnorm_kn[1]=0;

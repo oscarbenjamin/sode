@@ -23,7 +23,7 @@ int main(int argc, char *argv[])
     randnorm_seed(RANDNORM_SEED_PID_TIME);
 
     for (i=0; i < 1000000; i++)
-        printf("%.15f\n", RAND_NORMAL);
+        printf("%.15f\n", RANDNORM_NORMAL);
     return 0;
 
     if(argc == 1)
