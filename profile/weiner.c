@@ -32,8 +32,6 @@ const unsigned int num_systems =
         sizeof(example_systems) / sizeof(example_systems[0]);
 
 /* Struct to hold the data returned by parse_args */
-#define INVALID_ARGUMENTS 0
-#define GOOD_ARGUMENTS 1
 typedef struct InputOptionsStruct {
     SysInfo *sysinfo;
     double t1;
@@ -44,7 +42,13 @@ typedef struct InputOptionsStruct {
 
 
 /* Function used to process the command line args. */
+#define ARGUMENTS_INVALID 0
+#define ARGUMENTS_GOOD 1
 int parse_args(int argc, char *argv[], InputOptions *opts);
+
+#define SOLVE_FAILED 0
+#define SOLVE_SUCCEEDED 1
+int solve_sode(InputOptions *opts);
 
 int main(int argc, char *argv[])
 {
@@ -53,10 +57,14 @@ int main(int argc, char *argv[])
     /* Initialise random seed and prepare for rng generation */
     randnorm_seed(RANDNORM_SEED_PID_TIME);
 
-    if(parse_args(argc, argv, &opts) == INVALID_ARGUMENTS)
+    /* Parse the input arguments */
+    if(parse_args(argc, argv, &opts) == ARGUMENTS_INVALID)
         return 1;
-    else
-        return 0;
+
+    /* Actually solve and write the result to stdout */
+    solve_sode(&opts);
+
+    return 0;
 }
 
 int print_help(int argc, char *argv[], char *errmsg)
@@ -72,7 +80,7 @@ int print_help(int argc, char *argv[], char *errmsg)
 
 int invalid_arguments(int argc, char *argv[], char *errmsg) {
     print_help(argc, argv, errmsg);
-    return INVALID_ARGUMENTS;
+    return ARGUMENTS_INVALID;
 }
 
 /* Used by main to process the input arguments */
@@ -114,7 +122,15 @@ int parse_args(int argc, char *argv[], InputOptions *opts) {
         return invalid_arguments(argc, argv, "Unable to parse DTOUT");
 
     /* Indicate success */
-    return GOOD_ARGUMENTS;
+    return ARGUMENTS_GOOD;
+}
+
+/* Solve the equations specified by the user */
+int solve_sode(InputOptions *opts) {
+    printf("You have requested to solve '%s'\n", opts->sysinfo->sysname);
+    printf("Will no solve from %f to %f in steps of %f printing every %f\n",
+            opts->t1, opts->t2, opts->dtmax, opts->dtout);
+    return SOLVE_SUCCEEDED;
 }
 
 void sprint_time(char *timestr, size_t max) {
