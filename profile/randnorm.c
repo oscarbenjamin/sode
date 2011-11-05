@@ -56,10 +56,10 @@ void randnorm_seed(unsigned int seed) {
 unsigned int initial_seed(void) {
     unsigned int seed, pid, tprec;
 #if NIX
-    timespec ts;
+    struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
     pid = getpid();
-    tprec = s.tv_nsec;
+    tprec = ts.tv_nsec;
 #elif WINDOWS
     double microseconds;
     LARGE_INTEGER clockfreq, t;
