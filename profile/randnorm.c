@@ -15,13 +15,19 @@
 #include <math.h>
 #include <time.h>
 
+/* Debug function needs printf */
+#if RANDNORM_DEBUG
+#include <stdio.h>
+#endif
+
 /* Random seed uses pid and time in us or ns */
 #if WINDOWS
     #include <process.h>
     #include <windows.h>
-#else
+#elif NIX
     #include <unistd.h>
 #endif
+
 
 /* To get the MACROs defined there */
 #include "randnorm.h"
@@ -189,4 +195,101 @@ void randnorm_seed_ziggurat(unsigned long jsrseed)
         randnorm_fn[i]=exp(-.5*dn*dn);
         randnorm_wn[i]=dn/m1;
     }
+#ifdef RANDNORM_DEBUG
+    randnorm_debug_test();
+#endif /* RANDNORM_DEBUG */
 }
+
+#ifdef RANDNORM_DEBUG
+
+#define PRINT_SIZEOF(x) printf("sizeof(" #x "): %d bytes\n", (int)sizeof(x))
+#define MAX(a, b) ((a) > (b)) ? (a) : (b)
+#define MIN(a, b) ((a) < (b)) ? (a) : (b)
+#define NTIMES 1000000
+
+#define MINMAXMEANVAR(x, expr)                          \
+    double x##_min, x##_max, x##_mean, x##_var, x##_current;\
+    x##_mean = x##_min = x##_max = expr;                \
+    x##_var = 0;                                        \
+    for(i=2; i<=NTIMES; i++) {                          \
+        id = (double) i;                                \
+        x##_current = expr;                             \
+        x##_min = MIN(x##_min, x##_current);            \
+        x##_max = MAX(x##_min, x##_current);            \
+        x##_mean = ((id-1.)/id)*x##_mean + (1./id)*x##_current;\
+        dev = x##_current - x##_mean;                   \
+        x##_var = ((id-1.)/id)*x##_var + (1./(id - 1.))*dev*dev;\
+    }                                                   \
+    printf("Min: %le  Max: %le  Mean: %le  Var: %le\n", \
+            x##_min, x##_max, x##_mean, x##_var)
+
+
+
+
+void randnorm_debug_test()
+{
+    /* print the size of all standard types */
+    PRINT_SIZEOF(char);
+    PRINT_SIZEOF(unsigned char);
+    PRINT_SIZEOF(short);
+    PRINT_SIZEOF(unsigned short);
+    PRINT_SIZEOF(int);
+    PRINT_SIZEOF(unsigned int);
+    PRINT_SIZEOF(long);
+    PRINT_SIZEOF(unsigned long);
+    PRINT_SIZEOF(long long);
+    PRINT_SIZEOF(unsigned long long);
+    PRINT_SIZEOF(float);
+    PRINT_SIZEOF(double);
+
+    /* print a handful of random numbers */
+    printf("\n");
+    printf("3 uniform integers: %lu %lu %lu\n",
+            RANDNORM_SHR3, RANDNORM_SHR3, RANDNORM_SHR3);
+    printf("3 uniform floats in [0, 1]: %lf %lf %lf\n",
+           RANDNORM_UNIF, RANDNORM_UNIF, RANDNORM_UNIF);
+    printf("3 standard normals (ziggurat) %lf %lf %lf\n",
+           RANDNORM_NORMAL, RANDNORM_NORMAL, RANDNORM_NORMAL);
+    printf("3 standard normals (boxmuller) %lf %lf %lf\n",
+           randnorm_boxmuller(), randnorm_boxmuller(), randnorm_boxmuller());
+
+    /* collect stats on a large number of random variables */
+    int i; double id, dev;/* Used by MINMAXMEANVAR */
+
+    /* Results for SHR3 */
+    printf("\n");
+    printf("Stats from %u SHR3 integers:\n", NTIMES);
+    MINMAXMEANVAR(shr3, RANDNORM_SHR3);
+    printf("True values for SHR3 integers:\n");
+    printf("Min: %le  Max: %le  Mean: %le  Var: %le\n",
+            0., (double)RANDNORM_SHR3_MAX, (double)RANDNORM_SHR3_MAX / 2.,
+            (((double)RANDNORM_SHR3_MAX * (double)RANDNORM_SHR3_MAX) - 1.) / 12.);
+
+    /* Results for UNIF */
+    printf("\n");
+    printf("Stats from %u UNIF floats:\n", NTIMES);
+    MINMAXMEANVAR(unif, RANDNORM_UNIF);
+    printf("True values for UNIF floats:\n");
+    printf("Min: 0  Max: 1  Mean: 0.5  Var: %f\n", 1/12.);
+
+    /* Results for boxmuller */
+    printf("\n");
+    printf("Stats from %u boxmuller floats:\n", NTIMES);
+    MINMAXMEANVAR(boxm, randnorm_boxmuller());
+    printf("True values for boxmuller floats:\n");
+    printf("Min: -inf  Max: inf  Mean: 0  Var: 1\n");
+
+    /* Results for NORMAL */
+    printf("\n");
+    printf("Stats from %u NORMAL floats:\n", NTIMES);
+    MINMAXMEANVAR(normal, RANDNORM_NORMAL);
+    printf("True values for NORMAL floats:\n");
+    printf("Min: -inf  Max: inf  Mean: 0  Var: 1\n");
+
+
+    printf("\n");
+    printf("\n");
+    printf("\n");
+}
+
+#endif /* RANDNORM_DEBUG */

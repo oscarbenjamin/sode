@@ -16,6 +16,7 @@
 #define _RANDNORM_H
 
 #include <math.h>
+#include <limits.h>
 
 /* Global variables needed by the RANDNORM_ macros */
 extern unsigned long randnorm_jz, randnorm_jsr;
@@ -40,6 +41,8 @@ void randnorm_seed(unsigned int seed);
             randnorm_jsr^=(randnorm_jsr<<5),\
           randnorm_jz+randnorm_jsr\
         )
+#define RANDNORM_SHR3_MAX ULONG_MAX
+
 #define RANDNORM_UNIF (.5 + (signed) RANDNORM_SHR3*.2328306e-9)
 #define RANDNORM_NORMAL (\
             randnorm_hz=RANDNORM_SHR3,\
@@ -47,5 +50,9 @@ void randnorm_seed(unsigned int seed);
           (fabs(randnorm_hz)<randnorm_kn[randnorm_iz])\
                 ? randnorm_hz*randnorm_wn[randnorm_iz] : randnorm_nfix()\
         )
+
+#ifdef RANDNORM_DEBUG
+void randnorm_debug_test();
+#endif /* RANDNORM_DEBUG */
 
 #endif /* _RANDNORM_H */
