@@ -172,7 +172,7 @@ double randnorm_nfix(void)
 
 void randnorm_seed_ziggurat(unsigned long jsrseed)
 {
-    const double m1 = 2147483648.0;
+    const double m1 = RANDNORM_SHR3_MAX / 2;
     double dn=3.442619855899,tn=dn,vn=9.91256303526217e-3, q;
     int i;
     randnorm_jsr = 123456789 ^ jsrseed;
@@ -241,6 +241,8 @@ void randnorm_debug_test()
     PRINT_SIZEOF(unsigned long long);
     PRINT_SIZEOF(float);
     PRINT_SIZEOF(double);
+
+    printf("RANDNORM_SHR3_MAX: %lu", RANDNORM_SHR3_MAX);
 
     /* print a handful of random numbers */
     printf("\n");
