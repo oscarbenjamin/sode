@@ -215,7 +215,7 @@ void randnorm_seed_ziggurat(unsigned long jsrseed)
         id = (double) i;                                \
         x##_current = expr;                             \
         x##_min = MIN(x##_min, x##_current);            \
-        x##_max = MAX(x##_min, x##_current);            \
+        x##_max = MAX(x##_max, x##_current);            \
         x##_mean = ((id-1.)/id)*x##_mean + (1./id)*x##_current;\
         dev = x##_current - x##_mean;                   \
         x##_var = ((id-1.)/id)*x##_var + (1./(id - 1.))*dev*dev;\
