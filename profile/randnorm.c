@@ -210,21 +210,25 @@ void randnorm_seed_ziggurat(unsigned long jsrseed)
 #define RANDNORM_NTIMES 1000000
 #endif /* RANDNORM_NTIMES */
 
-#define MINMAXMEANVAR(x, expr)                          \
-    double x##_min, x##_max, x##_mean, x##_var, x##_current;\
-    x##_mean = x##_min = x##_max = expr;                \
-    x##_var = 0;                                        \
-    for(i=2; i<=RANDNORM_NTIMES; i++) {                 \
-        id = (double) i;                                \
-        x##_current = expr;                             \
-        x##_min = MIN(x##_min, x##_current);            \
-        x##_max = MAX(x##_max, x##_current);            \
-        x##_mean = ((id-1.)/id)*x##_mean + (1./id)*x##_current;\
-        dev = x##_current - x##_mean;                   \
-        x##_var = ((id-1.)/id)*x##_var + (1./(id - 1.))*dev*dev;\
-    }                                                   \
-    printf("Min: %le  Max: %le  Mean: %le  Var: %le\n", \
-            x##_min, x##_max, x##_mean, x##_var)
+/* MACRO to test the statistics of a larg number of random numbers */
+#define MINMAXMEANVAR(type, fmt, name, expr, description, details)      \
+    type name##_min, name##_max, name##_current;                        \
+    double name##_mean, name##_var;                                     \
+    name##_min = name##_max = expr;                                     \
+    name##_mean = (double)name##_min;                                   \
+    name##_var = 0;                                                     \
+    for(i=2; i<=RANDNORM_NTIMES; i++) {                                 \
+        id = (double) i;                                                \
+        name##_current = expr;                                          \
+        name##_min = MIN(name##_min, name##_current);                   \
+        name##_max = MAX(name##_max, name##_current);                   \
+        name##_mean = ((id-1.)/id)*name##_mean + (1./id)*(double)name##_current;\
+        dev = (double)name##_current - name##_mean;                     \
+        name##_var = ((id-1.)/id)*name##_var + (1./(id - 1.))*dev*dev;  \
+    }                                                                   \
+    printf("\tMin: " fmt " Max: " fmt " Mean: %le Var: %le\n",          \
+            name##_min, name##_max, name##_mean, name##_var);           \
+    printf("True values for %s:\n\t%s\n", description, details)
 
 /* MACRO to time the generation of random numbers using RANDNORM macros */
 #define TIMEREPEAT(type, name, expr)                                    \
@@ -240,6 +244,16 @@ void randnorm_seed_ziggurat(unsigned long jsrseed)
             name##_tsecs, RANDNORM_NTIMES);                             \
     printf("%.1lf nanoseconds per eval\n",                              \
             name##_tsecs * 1.0e9 / ((double)RANDNORM_NTIMES) )          \
+
+/* MACRO to combine the above and print a header */
+#define TEST_RANDNORM_MACRO(type, fmt, name, expr, description, details)\
+    printf("\n\n-------%s   %s\n\n", #name, description);               \
+    printf("3 examples:");                                              \
+    for(i=1; i<=3; ++i)                                                 \
+        printf(" " fmt, expr);                                          \
+    printf("\nStats from %u examples of %s:\n", RANDNORM_NTIMES, #name);\
+    MINMAXMEANVAR(type, fmt, name, expr, description, details);         \
+    TIMEREPEAT(type, name, expr);
 
 
 void randnorm_debug_test()
@@ -266,47 +280,26 @@ void randnorm_debug_test()
     /* collect stats on a large number of random variables */
     int i; double id, dev;/* Used by MINMAXMEANVAR */
 
-    /* Results for SHR3 */
-    printf("\n\n-------SHR3\n\n");
-    printf("3 SHR3 integers: %lu %lu %lu\n",
-            RANDNORM_SHR3, RANDNORM_SHR3, RANDNORM_SHR3);
-    printf("Stats from %u SHR3 integers:\n", RANDNORM_NTIMES);
-    MINMAXMEANVAR(shr3, RANDNORM_SHR3);
-    printf("True values for SHR3 integers:\n");
-    printf("Min: %le  Max: %le  Mean: %le  Var: %le\n",
-            0., (double)RANDNORM_SHR3_MAX, (double)RANDNORM_SHR3_MAX / 2.,
+    char shr3_details[100];
+    sprintf(shr3_details, "Min: 0 Max: %lu Mean: %le Var: %le",
+            RANDNORM_SHR3_MAX, (double)RANDNORM_SHR3_MAX / 2.,
             (((double)RANDNORM_SHR3_MAX * (double)RANDNORM_SHR3_MAX) - 1.) / 12.);
-    TIMEREPEAT(unsigned long, shr3, RANDNORM_SHR3);
 
-    /* Results for UNIF */
-    printf("\n");
-    printf("3 uniform floats in [0, 1]: %lf %lf %lf\n",
-           RANDNORM_UNIF, RANDNORM_UNIF, RANDNORM_UNIF);
-    printf("Stats from %u UNIF floats:\n", RANDNORM_NTIMES);
-    MINMAXMEANVAR(unif, RANDNORM_UNIF);
-    printf("True values for UNIF floats:\n");
-    printf("Min: 0  Max: 1  Mean: 0.5  Var: %f\n", 1/12.);
-    TIMEREPEAT(double, unif, RANDNORM_UNIF);
+    TEST_RANDNORM_MACRO(unsigned long, "%lu", shr3, RANDNORM_SHR3,
+                        "uniform integers",
+                        shr3_details);
 
-    /* Results for boxmuller */
-    printf("\n");
-    printf("3 standard normals (boxmuller) %lf %lf %lf\n",
-           randnorm_boxmuller(), randnorm_boxmuller(), randnorm_boxmuller());
-    printf("Stats from %u boxmuller floats:\n", RANDNORM_NTIMES);
-    MINMAXMEANVAR(boxm, randnorm_boxmuller());
-    printf("True values for boxmuller floats:\n");
-    printf("Min: -inf  Max: inf  Mean: 0  Var: 1\n");
-    TIMEREPEAT(double, boxm, randnorm_boxmuller());
+    TEST_RANDNORM_MACRO(double, "%lf", unif, RANDNORM_UNIF,
+                        "uniform reals",
+                        "Min: 0 Max: 1 Mean: 0.5 Var: 0.83333333");
 
-    /* Results for NORMAL */
-    printf("\n");
-    printf("3 standard normals (ziggurat) %lf %lf %lf\n",
-           RANDNORM_NORMAL, RANDNORM_NORMAL, RANDNORM_NORMAL);
-    printf("Stats from %u NORMAL floats:\n", RANDNORM_NTIMES);
-    MINMAXMEANVAR(normal, RANDNORM_NORMAL);
-    printf("True values for NORMAL floats:\n");
-    printf("Min: -inf  Max: inf  Mean: 0  Var: 1\n");
-    TIMEREPEAT(double, normal, RANDNORM_NORMAL);
+    TEST_RANDNORM_MACRO(double, "%lf", normal, RANDNORM_NORMAL,
+                        "standard normals",
+                        "Min: -Inf Max: +Inf Mean: 0 Var: 1");
+
+    TEST_RANDNORM_MACRO(double, "%lf", boxm, randnorm_boxmuller(),
+                        "standard normals",
+                        "Min: -Inf Max: +Inf Mean: 0 Var: 1");
 
     /* Separate from later output */
     printf("\n\n\nRANDNORM_DEBUG_TEST: -------------END----------\n\n");
