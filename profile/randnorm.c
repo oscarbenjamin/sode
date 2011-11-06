@@ -205,7 +205,10 @@ void randnorm_seed_ziggurat(unsigned long jsrseed)
 #define PRINT_SIZEOF(x) printf("sizeof(" #x "): %d bytes\n", (int)sizeof(x))
 #define MAX(a, b) ((a) > (b)) ? (a) : (b)
 #define MIN(a, b) ((a) < (b)) ? (a) : (b)
+
+#ifndef NTIMES
 #define NTIMES 1000000
+#endif /* NTIMES */
 
 #define MINMAXMEANVAR(x, expr)                          \
     double x##_min, x##_max, x##_mean, x##_var, x##_current;\
