@@ -41,6 +41,7 @@ void solve_sode(vecfield drift, vecfield diffusion, const size_t nvars,
 
     while(t < t2) {
         tout = t + dtout;
+        tout = (tout >= t2) ? t2 : tout;
         while(t < tout) {
             tnext = t + dtmax;
             tnext = (tnext <= tout) ? tnext : tout;
