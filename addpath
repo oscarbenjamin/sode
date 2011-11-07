@@ -1,3 +1,0 @@
-
-export PYTHONPATH="${PYTHONPATH}:$(pwd)/sode"
-export PATH="${PATH}:$(pwd)"
