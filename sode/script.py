@@ -12,6 +12,7 @@ from opster import dispatch
 
 from sode.pysode import SODE
 from sode.algos import solve, solve_bm, BrownianMotion
+from sode.io import load_csv, save_csv
 
 class Script(object):
     """A Script instance is a callable that can be used to quickly create a
@@ -152,7 +153,7 @@ class Script(object):
     def cont(self, file_name, **opts):
         """Continue previous numerical solution from input file"""
         # Load solution object
-        t, Xt, (sysopts, sysargs) = SODE.load_csv(file_name, parameters=True)
+        t, Xt, (sysopts, sysargs) = load_csv(file_name, parameters=True)
         sysinst = self._make_sode(*sysargs, **sysopts)
         if not sysinst:
             return -1
@@ -181,7 +182,7 @@ class Script(object):
             Xt = Xt[1:, :]
 
             # Save to same file or write to stdout
-            sysinst.save_csv(t, Xt, append_file, header=False, titles=False)
+            save_csv(sysinst, t, Xt, append_file, header=False, titles=False)
             append_file.flush()
 
     # Create system, print parameters and exit
@@ -210,7 +211,7 @@ class Script(object):
         # Load solution object
         if input_file is None:
             input_file = sys.stdin
-        t, Xt = SODE.load_csv(input_file, parameters=False)
+        t, Xt = load_csv(input_file, parameters=False)
 
         # figure is no-op without plotopts: force plot
         if not opts['plot_file']:
@@ -415,7 +416,7 @@ class Script(object):
             fout = sys.stdout
         else:
             fout = open(output_file, 'w')
-        sysinst.save_csv(t, Xt, fout)
+        save_csv(sysinst, t, Xt, fout)
 
     def figure(self, plot=False, plot_file='', **opts):
         if not (plot or plot_file):
