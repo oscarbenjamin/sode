@@ -15,8 +15,8 @@ import warnings
 import sys
 
 import numpy as np
-from numpy.random import randn
 
+from sode.algos import BrownianIncrements, BrownianMotion
 
 class SODESubclassError(NotImplementedError):
     """Exception raised by subclasses of SODE when the required subclass
@@ -25,101 +25,6 @@ class SODESubclassError(NotImplementedError):
         self.value = value
     def __str__(self):
         return repr(self.value)
-
-
-def BrownianIncrements(dt, nsamples=1, nvars=1):
-    """Function to generate an array of Brownian increments
-
-    Usage:
-    >>> # Create a single Brownian increment for a 1-d SODE
-    >>> dt = 0.001
-    >>> dWs = BrownianIncrements(dt)
-    >>> # Create nsamples increments for an 1-d SODE covering a period of time
-    >>> # given by dt * nsamples.
-    >>> nsamples = 1000
-    >>> dWs = BrownianIncrements(dt, nsamples)
-    >>> # Create nsamples increments for an nvars-dimensional SODE
-    >>> nvars = 4
-    >>> dWs = BrownianIncrements(dt, nsamples, nvars)
-
-    Arguments:
-    dt       : Sampling interval
-    nvars    : Number of variables (width of array)
-    'drift', 'diffusion'nsamples : Number of time samples
-
-    Returns:
-    dWs      : Array of shape (nvars, nsamples) with values drawn from a
-               normal distribution with zero mean and dt variance
-    """
-    return np.sqrt(dt) * randn(nsamples, nvars)
-
-
-class BrownianMotion(object):
-    """Discretised Brownian motion realisation
-
-    The BrownianMotion class provides an abstraction for defining a particular
-    realisation of a series of white noise increments.
-
-    Instances can be used with the solve_bm method of SODE instances to
-    generate a numerical solution from a known Broanian path. This can then be
-    compared with the exact solution using the same Brownian path, e.g.:
-
-    >>> # Create Brownian path and determine exact solution
-    >>> system = Weiner()
-    >>> x0 = system.get_x0() # or just: x0 = [0]
-    >>> t1 = 0
-    >>> t2 = 1
-    >>> dt = 0.001
-    >>> nsamples = int((t2 - t1)/dt)
-    >>> bm = BrownianMotion(t1, dt, nsamples, system.nvars)
-    >>> xt_exact = system.exact(x0, bm.t, bm.Wt)
-    >>> # Find numerical solution with same Brownian path
-    >>> xt_numerical = system.solve_bm(x0, bm)
-    >>> # Compare
-    >>> print max(abs(xt_exact - xt_numerical).flat)
-    0.0
-    """
-    def __init__(self, t1, dt, nsamples=None, nvars=None, dWs=None):
-        """Realisation of a Brownian process"""
-        # Create increments or use provided
-        if dWs is not None:
-            if nvars is None:
-                nvars = dWs.shape[1]
-            if nsamples is None:
-                nsamples = dWs.shape[0]
-            if dWs.shape != (nsamples, nvars):
-                raise ValueError("dWs dimensions != (nsamples, nvars)")
-        else:
-            dWs = BrownianIncrements(dt, nsamples, nvars)
-
-        # Create t and Wt vectors
-        Wt = np.zeros((nsamples + 1, nvars))
-        Wt[1:, :] = np.cumsum(dWs, axis=0)
-        t = t1 + dt * np.arange(nsamples + 1)
-        t.resize(Wt.shape)
-
-        # Attributes
-        self.nvars = nvars
-        self.nsamples = nsamples
-        self.t = t
-        self.dt = dt
-        self.t1 = t[0]
-        self.t2 = t[-1]
-        self.dWs = dWs
-        self.Wt = Wt
-
-    def coarse_grain(self):
-        """Return a BrownianMotion instance describing a path that has been
-        coarse grained by a factor of 2."""
-        # Don't bother to deal with this case
-        if self.nsamples % 2:
-            raise ValueError("Need multiple of 2 sample to course grain")
-        # Coarse grain increments
-        dWs = (self.dWs[::2] + self.dWs[1::2])
-        dt = 2 * self.dt
-        nsamples = self.nsamples // 2
-        # Return new instance
-        return BrownianMotion(self.t1, dt, dWs=dWs)
 
 
 class SODE(object):
@@ -328,7 +233,7 @@ class SODE(object):
         >>> x1 = system.get_x0()
         >>> t1 = 0
         >>> dt = 0.001
-        >>> dW = BrownianIncrements(dt, 1, system.nvars)
+        >>> dW = BrownianIncrements(dt, system.nvars)
         >>> x2, t2 = system.solveEM(x1, t1, dt, dW)
 
         Arguments:
@@ -383,7 +288,7 @@ class SODE(object):
         >>> x1 = system.get_x0()
         >>> t1 = 0
         >>> dt = 0.001
-        >>> dW = BrownianIncrements(dt, 1, system.nvars)
+        >>> dW = BrownianIncrements(dt, system.nvars)
         >>> x2, t2 = system.solveRK4_additive(x1, t1, dt, dW)
 
         Arguments:
@@ -486,7 +391,7 @@ class SODE(object):
 
             # Break into substeps and generate BrownianIncrements
             Nsteps, dt = self.largest_dt(t[n+1] - t[n], dtmax)
-            dWs = BrownianIncrements(dt, Nsteps, Nequations)
+            dWs = BrownianIncrements(dt, (Nsteps, Nequations))
 
             # Iterate over increments with fixed step
             xi, ti = Xt[n, :], t[n]
@@ -519,7 +424,7 @@ class SODE(object):
         >>> t2 = 1
         >>> dt = 0.001
         >>> nsamples = int((t2 - t1) / dt)
-        >>> bm = BrownianMotion(t1, dt, nsamples, system.nvars)
+        >>> bm = BrownianMotion(t1, dt, (nsamples, system.nvars))
         >>> x2 = system.solve_bm(system.get_x0(), bm)
 
         Arguments:

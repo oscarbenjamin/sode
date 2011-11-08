@@ -13,7 +13,7 @@
 # SODEs.
 
 
-from sode.sode import SODE
+from sode.pysode  import SODE
 
 
 class Weiner(SODE):
@@ -54,7 +54,7 @@ class Weiner(SODE):
 
 
 if __name__ == "__main__":
-    # The Script class imported from sode allows us to easily turn this file
+    # The Script class imported from sode.pysode allows us to easily turn this file
     # into a script that can be used to investigate the SODE numerically.
     import sys
     from sode.script import Script

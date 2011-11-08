@@ -8,7 +8,7 @@
 # irregularly rather than simply converge on the fixed point.
 
 
-from sode.sode import SODE
+from sode.pysode  import SODE
 
 
 class LinearAdditive2D(SODE):

@@ -8,7 +8,7 @@
 
 import numpy as np
 
-from sode.sode import SODE
+from sode.pysode  import SODE
 
 
 class SinusoidalMultiplicative(SODE):
