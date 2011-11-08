@@ -214,274 +214,18 @@ class SODE(object):
     # Numerical routines
     #
 
-    def largest_dt(self, T, dtmax):
-        """Compute largest dt that gives equal size steps from 0 to T"""
-        # Awkward because numpy does not provide round-away-from-zero
-        r = T / dtmax
-        N = int(np.sign(r) * np.ceil(abs(r)))
-        dt = T / N
-        return N, dt
-
-    def solveEM(self, x1, t1, dt, dW):
-        """Integrate SODEs numerically using Euler-Maruyama (EM) method.
-
-        Integrate from ti to ti + dt with initial condition xi at ti in a
-        single integration step (use solve() to generate a full timeseries)
-
-        Usage:
-        >>> system = Weiner()
-        >>> x1 = system.get_x0()
-        >>> t1 = 0
-        >>> dt = 0.001
-        >>> dW = BrownianIncrements(dt, system.nvars)
-        >>> x2, t2 = system.solveEM(x1, t1, dt, dW)
-
-        Arguments:
-        xi :    Vector specifying the state of the system at ti.
-        ti :    Time corresponding to initial condition xi.
-        dt :    Time step to use for EM integration.
-        dW :    Change in Brownian motion over the interval ti to ti + dt
-                e.diffusion.  dW = W(ti+dt) - W(ti). If W is a Brownian motion
-                then dW should be a normally distributed random variable with
-                variance dt.
-
-        Returns:
-        x2 :    Vector specifying the state of the system at t2
-        t2 :    t1 + dt, returned for iterative convenience
-
-        Description:
-        The Euler Maruyama method approximates the stochastic integration step
-        from Tn to Tn+1
-
-                          / Tn+1              / Tn+1
-        X(Tn+1) = X(Tn) + |    a(X(s), s)ds + |    b(X(s), s)dW(s)
-                          / Tn                / Tn
-
-        with the approximation
-
-        Xn+1 = Xn + a(Xn, tn) delta_t + b(Xn, tn) delta_Wn
-
-        where delta_Wn is a normally-distributed random variable with expected
-        value 0 and variance delta_t. The method is a simple extension of
-        Euler's method for deterministic ODEs.
-        """
-        a = np.zeros(self.nvars)
-        b = np.zeros(self.nvars)
-        a = self.drift(a, x1, t1)
-        b = self.diffusion(b, x1, t1)
-        x2 = x1 + a * dt + b * dW
-        t2 = t1 + dt
-        return x2, t2
-
-    def solveRK4_additive(self, x1, t1, dt, dW):
-        """Integrate SODEs numerically using 4-step Runge-Kutta method.
-
-        Integrate additive SODE from ti to ti + dt with initial condition x1
-        at t1 in a using a 4 step Runge-Kutta type method.
-
-        This method is from:
-        "Numerical methods for stochastic differential equations" by Joshua
-        Wilkie and published in Physical Review E. 2004.
-
-        Usage:
-        >>> system = Weiner()
-        >>> x1 = system.get_x0()
-        >>> t1 = 0
-        >>> dt = 0.001
-        >>> dW = BrownianIncrements(dt, system.nvars)
-        >>> x2, t2 = system.solveRK4_additive(x1, t1, dt, dW)
-
-        Arguments:
-        x1 :    Vector specifying the state of the system at t1.
-        t1 :    Time corresponding to initial condition x1.
-        dt :    Time step to use for EM integration.
-        dW :    Change in Brownian motion over the interval t1 to t1 + dt
-                e.diffusion.  dW = W(t1+dt) - W(t1). If W is a Brownian motion
-                then dW should be a normally distributed random variable with
-                variance dt.
-
-        Returns:
-        x2 :    Vector specifying the state of the system at t2
-        t2 :    t1 + dt, returned for iterative convenience
-
-        Description:
-        We wich to integrate Xn from Tn to Tn+1:
-
-                          / Tn+1              / Tn+1
-        X(Tn+1) = X(Tn) + |    a(X(s), s)ds + |    b(X(s), s)dW(s)
-                          / Tn                / Tn
-
-        First define the vector function F as:
-
-        Fj(Xn, Tn) = aj(Xn, tn) delta_t + bj(Xn, tn) delta_Wnj
-
-        Then define successive approximations:
-
-        K1 = F(Xn, Tn)
-        K2 = F(Xn + 1/2 K1, Tn + 1/2 delta_t)
-        K3 = F(Xn + 1/2 K2, Tn + 1/2 delta_t)
-        k4 = F(X + K3, Tn + delta_t)
-
-        We can take a weighted average of these increments:
-
-        Xn+1 = Xn + 1/6 (K1 + 2 K2 + 2 K3 + K4)
-
-        The method is a simple extension of the RK4 method for ODEs. However,
-        in the case of SDEs convergence is only of order 2.
-
-        The form used here is valid only for additive noise.
-        """
-        a = np.zeros(self.nvars)
-        b = np.zeros(self.nvars)
-        K1 = self._rk4_inc(a, b, x1,         t1        , dt, dW)
-        K2 = self._rk4_inc(a, b, x1 + K1/2., t1 + dt/2., dt, dW)
-        K3 = self._rk4_inc(a, b, x1 + K2/2., t1 + dt/2., dt, dW)
-        K4 = self._rk4_inc(a, b, x1 + K3   , t1 + dt   , dt, dW)
-        x2 = x1 + (K1 + 2*K2 + 2*K3 + K4) / 6.
-        t2 = t1 + dt
-        return x2, t2
-
-    def _rk4_inc(self, a, b, x1, t1, dt, dW):
-        return self.drift(a, x1, t1) * dt + self.diffusion(b, x1, t1) * dW
-
-    def _elementary_method(self, method):
-        method = method or 'EM'
-        if method == 'EM':
-            return self.solveEM
-        elif method == 'RK4':
-            return self.solveRK4_additive
-        else:
-            raise ValueError("Unrecognised method '{0}'".format(method))
-
-    def solve(self, x0, t, dtmax=0.001, method=None):
-        """Integrate SODEs numerically to obtain solution at times t.
-
-        Usage:
-        >>> system = Weiner()
-        >>> x1 = system.get_x0()
-        >>> t = np.arange(0, 1, 1e-2)
-        >>> Xt = system.solve(x1, t, dtmax=1e-3)
-
-        Arguments:
-        x0    : Vector specifying the state of the system as t[0]. get_x0()
-                returns the default initial conditions defined for the
-                equations.
-        t     : Vector of times at which the solution is desired to be known.
-        dtmax : Maximum integration step to use (default 0.001).
-        method: 'EM' or 'RK4'. Specifies the elementary integration method.
-                'RK4' is valid only for SODEs with additive noise.
-
-        Returns:
-        Xt :    2-dimensional array specifying the states of the system at
-                times in t. The nth rowth of X (X[n, :]) gives the state of
-                the system at time t[n].
-        """
-        # Choose method
-        method = self._elementary_method(method)
-
-        # Prepare data for solution
-        Nequations = len(x0)
-        Ntimes = len(t)
-        Xt = np.zeros((Ntimes, Nequations))
-        Xt[:] = np.nan
-
-        # Iteratively integrate from x[n], t[n] to x[n+1] t[n+1]
-        Xt[0, :] = xi = x0
-        for n in range(Ntimes - 1):
-
-            # Break into substeps and generate BrownianIncrements
-            Nsteps, dt = self.largest_dt(t[n+1] - t[n], dtmax)
-            dWs = BrownianIncrements(dt, (Nsteps, Nequations))
-
-            # Iterate over increments with fixed step
-            xi, ti = Xt[n, :], t[n]
-            for dW in dWs:
-                xi, ti = method(xi, ti, dt, dW)
-
-
-            # ti is incremented from t[n] by dt Nsteps times
-            if not np.allclose(ti, t[n+1]):
-                raise ValueError("Stepsize underflow")
-
-            # Stop once nans start appearing
-            if np.isnan(xi).any():
-                warnings.warn('nans in solution. Stopping')
-                break
-
-            # Store this state
-            Xt[n+1, :] = xi
-
-        # Return array of states
-        return Xt
-
-    def solve_bm(self, x0, bm, method=None):
-        """Integrate SODEs with fixed step and provided noise realisation.
-
-        Usage:
-        >>> # Create an SODE instance
-        >>> system = Weiner()
-        >>> t1 = 0
-        >>> t2 = 1
-        >>> dt = 0.001
-        >>> nsamples = int((t2 - t1) / dt)
-        >>> bm = BrownianMotion(t1, dt, (nsamples, system.nvars))
-        >>> x2 = system.solve_bm(system.get_x0(), bm)
-
-        Arguments:
-        x0 :    Vector specifying the state of the system as t[0]. get_x0()
-                returns the default initial conditions defined for the
-                equations.
-        bm :    BrownianMotion instance. Integration is performed with the
-                increments from bm. bm is also used to establish the interval
-                of integration and the integration step.
-        method: 'EM' or 'RK4'. Specifies the elementary integration method.
-                'RK4' is valid only for SODEs with additive noise.
-
-
-        Returns:
-        t  :    Vector of time values for the solution
-        Xt :    2-dimensional array specifying the state of the system at
-                times corresponding to t.
-
-        Notes:
-        The integration timestep, dt, is determined by:
-        dt = (t2 - t1) / (len(W) - 1)
-        """
-        # Choose method
-        method = self._elementary_method(method)
-
-        # Prepare data for solution
-        Nequations = len(x0)
-        Ntimes = bm.nsamples + 1
-        Xt = np.zeros((Ntimes, Nequations))
-        Xt[:] = np.nan
-
-        # Iterate over increments with fixed step
-        Xt[0, :], ti = x0, bm.t1
-        for n, dW in enumerate(bm.dWs):
-            Xt[n+1, :], ti = method(Xt[n, :], ti, bm.dt, dW)
-
-        # ti is incremented from t[n] by dt Ntimes times
-        if not np.allclose(ti, bm.t2):
-            raise ValueError("Stepsize underflow")
-
-        # Return states and times
-        return Xt
-
-    def make_brownian_path(self, t1, dt, nsamples):
-        """Create a discrete Brownian path suitable for use with solve_bm"""
-        return BrownianMotion(t1, dt, nsamples, self.nvars)
-
     @staticmethod
     def load_csv(fin, parameters=False):
         """Load solution t, Xt from input-file fin
 
         Usage:
         >>> # Create a system, generate a solution and save it
+        >>> from sode.weiners import Weiner
+        >>> from sode.algos import solve
         >>> system = Weiner()
         >>> x1 = system.get_x0()
         >>> t = np.arange(0, 1, 1e-2)
-        >>> Xt = system.solve(x1, t, dtmax=1e-3)
+        >>> Xt = solve(system, x1, t, dtmax=1e-3)
         >>> system.save_csv(t, Xt, open('sys1_1.csv', 'w'))
         >>> # Create a new system
         >>> system = Weiner()
@@ -560,10 +304,12 @@ class SODE(object):
         """Save solution t, Xt to output-file fout
 
         Usage:
+        >>> from sode.weiners import Weiner
+        >>> from sode.algos import solve
         >>> system = Weiner()
         >>> x1 = system.get_x0()
         >>> t = np.arange(0, 1, 1e-2)
-        >>> Xt = system.solve(x1, t, dtmax=1e-3)
+        >>> Xt = solve(system, x1, t, dtmax=1e-3)
         >>> system.save_csv(t, Xt, open('sys1_1.csv', 'w'))
 
         Writes the solution to fout in csv format where lines beginning with
@@ -791,28 +537,6 @@ class SODENetwork(SODE):
         for sys in self._ss_eval:
             sys.diffusion(b, x, t)
         return b
-
-# Needed for the doctests
-class Weiner(SODE):
-    """Weiner process with drift coeff. mu and diffusion coeff. sigma
-
-        dx(t) = mu dt + sigma dW(t)
-
-    This trivial SODE has the exact solution:
-
-        x(t) = x(0) + mu t + sigma W(t)
-    """
-    variables = (('x', 0),)
-    parameters = (('mu', 0), ('sigma', 1))
-
-    def drift(self, a, x, t):
-        return self.mu
-
-    def diffusion(self, b, x, t):
-        return self.sigma
-
-    def exact(self, x0, t, Wt):
-        return (x0 + self.mu * t) + self.sigma * Wt
 
 
 # Quick test suite to demonstrate usage of sode.py and script.py

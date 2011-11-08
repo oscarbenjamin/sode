@@ -10,6 +10,8 @@ import sys
 import numpy as np
 from opster import dispatch
 
+from sode.pysode import SODE
+from sode.algos import solve, solve_bm, BrownianMotion
 
 class Script(object):
     """A Script instance is a callable that can be used to quickly create a
@@ -127,7 +129,7 @@ class Script(object):
         # Create solution
         t = np.arange(opts['t1'], opts['t2'] + opts['dtout'], opts['dtout'])
         x0 = sysinst.get_x0()
-        Xt = sysinst.solve(x0, t, opts['dtmax'], method=opts['method'])
+        Xt = solve(sysinst, x0, t, opts['dtmax'], method=opts['method'])
 
         # Ouput file is contained in opts (no-op if not provided)
         self.save_solution(sysinst, t, Xt, **opts)
@@ -172,7 +174,7 @@ class Script(object):
 
             # Extend solution
             t = np.arange(t1, t1 + opts['T'] + opts['dtout'], opts['dtout'])
-            Xt = sysinst.solve(x0, t, opts['dtmax'], method=opts['method'])
+            Xt = solve(sysinst, x0, t, opts['dtmax'], method=opts['method'])
 
             # Remove repeated time
             t = t[1:]
@@ -264,7 +266,7 @@ class Script(object):
             nsamples = (nsamples // nmin + 1) * nmin
 
         # First do the best solution
-        bp = sysinst.make_brownian_path(opts['t1'], opts['dtmin'], nsamples)
+        bp = BrownianMotion(opts['t1'], opts['dtmin'], (nsamples, sysinst.nvars))
         x0 = sysinst.get_x0()
 
         # Create exact solution if possible
@@ -281,7 +283,7 @@ class Script(object):
         for n in range(opts['levels']):
             r = 2 ** n
             lab = '{0}dt'.format(r)
-            Xt = sysinst.solve_bm(x0, bp, method=opts['method'])
+            Xt = solve_bm(sysinst, x0, bp, method=opts['method'])
             results.append({'t':bp.t, 'Xt':Xt, 'dt':bp.dt, 'r':r, 'label':lab})
             bp = bp.coarse_grain()
 
