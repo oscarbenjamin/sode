@@ -8,7 +8,7 @@
 
 import numpy as np
 
-from sode import SODE, Script
+from sode.sode import SODE
 
 
 class TangentMultiplicative(SODE):
@@ -32,5 +32,6 @@ class TangentMultiplicative(SODE):
 
 if __name__ == "__main__":
     import sys
+    from sode.script import Script
     script = Script(TangentMultiplicative)
     script.main(argv=sys.argv[1:])

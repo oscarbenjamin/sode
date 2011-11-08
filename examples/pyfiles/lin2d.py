@@ -8,7 +8,7 @@
 # irregularly rather than simply converge on the fixed point.
 
 
-from sode import SODE, Script
+from sode.sode import SODE
 
 
 class LinearAdditive2D(SODE):
@@ -30,5 +30,6 @@ class LinearAdditive2D(SODE):
 
 if __name__ == "__main__":
     import sys
+    from sode.script import Script
     script = Script(LinearAdditive2D)
     script.main(argv=sys.argv[1:])

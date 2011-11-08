@@ -9,7 +9,7 @@
 # higher-dimensional SODEs.
 
 
-from sode import SODE, Script
+from sode.sode import SODE
 
 
 class Weiner2(SODE):
@@ -57,5 +57,6 @@ if __name__ == "__main__":
     # The Script class imported from sode allows us to easily turn this file
     # into a script that can be used to investigate the SODE numerically.
     import sys
+    from sode.script import Script
     script = Script(Weiner2)
     script.main(argv=sys.argv[1:])

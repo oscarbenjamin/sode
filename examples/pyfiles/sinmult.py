@@ -8,7 +8,7 @@
 
 import numpy as np
 
-from sode import SODE, Script
+from sode.sode import SODE
 
 
 class SinusoidalMultiplicative(SODE):
@@ -33,5 +33,6 @@ class SinusoidalMultiplicative(SODE):
 
 if __name__ == "__main__":
     import sys
+    from sode.script import Script
     script = Script(SinusoidalMultiplicative)
     script.main(argv=sys.argv[1:])

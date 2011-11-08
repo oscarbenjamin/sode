@@ -8,7 +8,7 @@
 
 import numpy as np
 
-from sode import SODE, Script
+from sode.sode import SODE
 
 
 class LinearMultiplicative(SODE):
@@ -34,5 +34,6 @@ class LinearMultiplicative(SODE):
 
 if __name__ == "__main__":
     import sys
+    from sode.script import Script
     script = Script(LinearMultiplicative)
     script.main(argv=sys.argv[1:])

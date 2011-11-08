@@ -435,7 +435,9 @@ class MultiScript(Script):
     def __init__(self, SYSDICT):
         """Adds system choosing options to Script"""
         self.SYSDICT = SYSDICT
-        self.sys_opts = [('s', 'system-type', '', 'Name of SODE system')]
+        sysnames = [k for k in self.SYSDICT if k is not None]
+        helptext = 'Name of SODE system: {0}'.format(', '.join(sysnames))
+        self.sys_opts = [('s', 'system-type', '', helptext)]
         Script.__init__(self)
         self.cmdtable['list'] = (self.list_, [], 'List possible system names')
 
