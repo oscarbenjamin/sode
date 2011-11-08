@@ -44,7 +44,7 @@ class SODE(object):
     # List of regexes that cannot be used for variable names or parameter
     # names. These are reserved because they cannot be used as attributes
     _RES = ['drift', 'diffusion', 'exact']
-    _RES_BEG = ['set', 'get', 'has', 'solve', 'make', 'load', 'save']
+    _RES_BEG = ['set', 'get', 'load', 'save']
     _RE_RESERVED = [
         (r'^_.*$',
             "Names must not being with underscore: '{0}'"),
