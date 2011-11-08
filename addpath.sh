@@ -10,3 +10,4 @@ fi
 PATH="${PATH}:${SODEDIR}/scripts"
 
 export PYTHONPATH
+export PATH

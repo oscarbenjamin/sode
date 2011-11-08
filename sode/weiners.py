@@ -2,7 +2,8 @@
 #
 # This script is run when sode is called at the cmd line
 
-from sode import Weiner, Script
+from sode import Weiner
+from .script import Script
 
 weinerscript = Script(Weiner)
 
