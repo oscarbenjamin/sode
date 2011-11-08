@@ -2,6 +2,8 @@
 #
 # Test time taken by the different implementations of examples
 
+set -o errexit
+
 # Integration variables
 t1=0
 t2=10
@@ -24,12 +26,12 @@ for sys in\
         echo ----------- Example $sys -----------
         echo ----- In Pure python
         time ./pyexamples.py solve --system-type=$sys --t1=$t1 --t2=$t2\
-                                   --dtmax=$dtmax --dtout=$dtout > tmp
+                                   --dtmax=$dtmax --dtout=$dtout > .tmppy
         echo
         echo ----- In Pure c
-        time ./cexamples.exe $sys $t1 $t2 $dtmax $dtout > tmp
+        time ./cexamples.exe $sys $t1 $t2 $dtmax $dtout > .tmpc
         echo
         echo
 done
 
-rm tmp
+rm .tmpc .tmppy

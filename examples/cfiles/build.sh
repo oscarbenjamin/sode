@@ -9,6 +9,7 @@ gcc -O3 -iquote "${CDIR}" -o "${OUTPUT}" \
            main.c \
            examples.c \
            "${CDIR}/randnorm.c" \
-           "${CDIR}/solvers.c" 
+           "${CDIR}/solvers.c" \
+           $@
 
 echo "Compiled ${OUTPUT}"
