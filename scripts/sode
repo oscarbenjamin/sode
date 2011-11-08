@@ -1,0 +1,10 @@
+#!/usr/bin/env python
+#
+# Run the script provided in sode/weiners.py
+
+import sys
+
+from sode.weiners import weinerscript
+
+if __name__ == "__main__":
+    weinerscript.main(sys.argv[1:])

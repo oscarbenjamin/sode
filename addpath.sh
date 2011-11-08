@@ -7,6 +7,6 @@ else
     PYTHONPATH="${SODEDIR}"
 fi
 
-PATH="${PATH}:${SODEDIR}/bin"
+PATH="${PATH}:${SODEDIR}/scripts"
 
 export PYTHONPATH
