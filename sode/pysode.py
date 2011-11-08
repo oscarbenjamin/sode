@@ -11,12 +11,10 @@ from __future__ import division
 import datetime
 import re
 import itertools
-import warnings
 import sys
 
 import numpy as np
 
-from sode.algos import BrownianIncrements, BrownianMotion
 
 class SODESubclassError(NotImplementedError):
     """Exception raised by subclasses of SODE when the required subclass
