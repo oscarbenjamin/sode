@@ -6,8 +6,15 @@ import os.path
 from distutils.core import setup
 from distutils.extension import Extension
 from Cython.Distutils import build_ext
+import numpy
 
-ext_modules = [Extension('sode.cysode', [os.path.join('sode', 'cysode.pyx')])]
+ext_modules = [
+    Extension(
+        'sode.cysode',
+        [os.path.join('sode', 'cysode.pyx')],
+        include_dirs=[numpy.get_include()]
+    ),
+]
 
 setup(
     name = 'sode',

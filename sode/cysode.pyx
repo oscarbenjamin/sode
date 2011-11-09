@@ -4,7 +4,12 @@
 
 import numpy as np
 cimport numpy as np
-DTYPE = np.float64
+
+cdef extern from "numpy/arrayobject.h":
+    int _import_array()
+    int _import_umath()
+_import_array()
+_import_umath()
 
 cdef class CYSODE:
 
