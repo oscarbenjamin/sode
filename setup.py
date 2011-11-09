@@ -11,7 +11,8 @@ import numpy
 ext_modules = [
     Extension(
         'sode.cysode',
-        [os.path.join('sode', 'cysode.pyx')],
+        [os.path.join('sode', 'cysode.pyx'),
+         os.path.join('sode', 'cfiles', 'randnorm.c')],
         include_dirs=[numpy.get_include()]
     ),
 ]

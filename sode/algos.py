@@ -304,6 +304,10 @@ def solve(sodeinst, x0, t, dtmax=0.001, method=None):
     Xt[0, :] = xi = x0
     for n in range(Ntimes - 1):
 
+        if hasattr(sodeinst, 'solveto'):
+            sodeinst.solveto(Xt[n, :], t[n], Xt[n+1,:], t[n+1], dtmax)
+            continue
+
         # Break into substeps and generate BrownianIncrements
         Nsteps, dt = largest_dt(t[n+1] - t[n], dtmax)
         dWs = BrownianIncrements(dt, (Nsteps, Nequations))
