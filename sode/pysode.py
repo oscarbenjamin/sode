@@ -38,18 +38,8 @@ class SODE(object):
     return vectors of the same size as x.
     """
 
-    # List of regexes that cannot be used for variable names or parameter
-    # names. These are reserved because they cannot be used as attributes
-    _RES = ['drift', 'diffusion', 'exact']
-    _RES_BEG = ['set', 'get', 'load', 'save']
-    _RE_RESERVED = [
-        (r'^_.*$',
-            "Names must not being with underscore: '{0}'"),
-        (r'^({0})$'.format('|'.join(_RES)),
-            "'{0}' is a reserved name"),
-        (r'^({0})_.*$'.format('|'.join(_RES_BEG)),
-            "Names ('{{0}}') cannot begin with {0}".format(','.join(_RES_BEG))),
-    ]
+    # List of reserved parameter/variable names
+    RESERVED = ('drift', 'diffusion', 'exact', '_', 'get', 'set')
 
     def __init__(self, **kwargs):
         """SODE(**kwargs)
@@ -87,32 +77,32 @@ class SODE(object):
     def diffusion(self, b, x, t):
         raise SODESubclassError("Subclasses should override this function")
 
-    # exact solution (used in convergence calculations if provided
+    # exact solution (used in convergence calculations if provided)
     def exact(self, x0, t, Wt):
         raise SODESubclassError("Subclasses should override this function")
-
-    # Code for accessing variables:
 
     def _init_pv(self, parameters, variables):
         # Check for reserved or duplicated parameter/variable names
         vp_names = set()
         for name, _ in variables + parameters:
-            for r, msg in self._RE_RESERVED:
-                if re.match(r, name):
+            for start in self.RESERVED:
+                if name.startswith(start):
+                    msg = "parameter/variable name cannot begin with '{0}'"
                     raise SODESubclassError(msg.format(name))
             if name in vp_names:
-                raise ValueError("Duplicate name '{0}'".format(name))
+                msg = "Duplicate parameter/variable name '{0}'"
+                raise SODESubclassError(msg.format(name))
             vp_names.add(name)
 
         # Prepare scene for variable/parameter access
         # _x0 is the array holding the initial conditions
         # Variable indices are stored as attributes with the same names
+        # Parameter values are stored as attributes with the same names
         self._variables = [var for var, _ in variables]
         self._parameters = [par for par, _ in parameters]
         self._x0 = np.zeros(len(self._variables))
         for n, var in enumerate(self._variables):
             self._set_var_index(var, n)
-        # For convenience access later
         self.nvars = len(self._variables)
 
         # Initialise default values for parameters and variables
@@ -128,6 +118,8 @@ class SODE(object):
             if key.endswith('0'):
                 self.set_ic(key[:-1], val)
             else:
+                # Fail silently. In a Network, the parameter value may apply
+                # to some othre SODE instance.
                 try:
                     self.set_parameter(key, val)
                 except ValueError:
@@ -142,6 +134,8 @@ class SODE(object):
             self._set_var_index(var, new_index)
         # Prevent this system from being used independently
         self._x0 = x0
+
+    # Code for accessing variables:
 
     def get_variables(self):
         """Return a list of variable names"""
@@ -205,9 +199,6 @@ class SODE(object):
             lines.append('var {0} = {1}'.format(name, self.get_ic(name)))
         return '\n'.join(lines)
 
-    #
-    # Numerical routines
-    #
 
 class SODENetwork(SODE):
     """Specialises SODE for a system defined in terms of subsystems"""
