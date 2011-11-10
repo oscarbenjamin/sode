@@ -8,22 +8,19 @@
 
 from sode.script import MultiScript
 
-from cyfiles.weiner import Weiner
-#from pyfiles.weiner2 import Weiner2
-#from pyfiles.lin2d import LinearAdditive2D
-#from pyfiles.linmult import LinearMultiplicative
-#from pyfiles.sinmult import SinusoidalMultiplicative
-#from pyfiles.tanmult import TangentMultiplicative
-
+from cyfiles.examples import (Weiner, Weiner2, LinearAdditive2D,
+                              LinearMultiplicative,
+                              SinusoidalMultiplicative,
+                              TangentMultiplicative)
 
 sysdict = {
     None:'weiner',
     'weiner':Weiner,
-#    'weiner2':Weiner2,
-#    'lin2d':LinearAdditive2D,
-#    'linmult':LinearMultiplicative,
-#    'sinmult':SinusoidalMultiplicative,
-#    'tanmult':TangentMultiplicative,
+    'weiner2':Weiner2,
+    'lin2d':LinearAdditive2D,
+    'linmult':LinearMultiplicative,
+    'sinmult':SinusoidalMultiplicative,
+    'tanmult':TangentMultiplicative,
 }
 examples_script = MultiScript(sysdict)
 

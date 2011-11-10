@@ -18,15 +18,11 @@ def sode_extension(modname, pyxname):
         include_dirs=[numpy.get_include(), '.']
     )
 
-def example_extension(name):
-    return sode_extension(
-        'sode.examples.cyfiles.{0}'.format(name),
-        os.path.join('sode', 'examples', 'cyfiles', '{0}.pyx'.format(name))
-    )
-
 ext_modules = [
-    sode_extension('sode.cysode', os.path.join('sode', 'cysode.pyx')),
-    example_extension('weiner'),
+    sode_extension('sode.cysode',
+                   os.path.join('sode', 'cysode.pyx')),
+    sode_extension('sode.examples.cyfiles.examples',
+                   os.path.join('sode', 'examples', 'cyfiles', 'examples.pyx')),
 ]
 
 setup(
