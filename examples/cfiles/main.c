@@ -160,7 +160,7 @@ int print_weiner()
     printf("time, x\n");
     printf("%f, %f\n", t1, x1);
     for(i=0; i<nsteps; i++) {
-        x += alpha * dt + beta * sqrtdt * RANDNORM_NORMAL;
+        x += alpha * dt + beta * sqrtdt * RANDNORM_NORMAL();
         t += dt;
         printf("%f, %f\n", t, x);
     }

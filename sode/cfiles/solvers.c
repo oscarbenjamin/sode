@@ -23,7 +23,7 @@ void solve_EM(vecfield drift, vecfield diffusion, size_t nvars, /* SODEs */
     (*drift)(x1, t1, temp1);
     (*diffusion)(x1, t1, temp2);
     for(i=0; i<nvars; i++)
-        x2[i] = x1[i] + dt * temp1[i] + sqrtdt * temp2[i] * RANDNORM_NORMAL;
+        x2[i] = x1[i] + dt * temp1[i] + sqrtdt * temp2[i] * RANDNORM_NORMAL();
 }
 
 /* Solve the equations specified by the user */
