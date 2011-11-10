@@ -5,25 +5,27 @@
 import os.path
 from distutils.core import setup
 from distutils.extension import Extension
+
 from Cython.Distutils import build_ext
 import numpy
 
+import sode
 
-def example_extension(name):
+def sode_extension(modname, pyxname):
     return Extension(
-        'sode.examples.cyfiles.{0}'.format(name),
-        [os.path.join('sode', 'examples', 'cyfiles', '{0}.pyx'.format(name)),
-         os.path.join('sode', 'cfiles', 'randnorm.c')],
+        modname,
+        [pyxname, os.path.join('sode', 'cfiles', 'randnorm.c')],
         include_dirs=[numpy.get_include(), '.']
     )
 
+def example_extension(name):
+    return sode_extension(
+        'sode.examples.cyfiles.{0}'.format(name),
+        os.path.join('sode', 'examples', 'cyfiles', '{0}.pyx'.format(name))
+    )
+
 ext_modules = [
-    Extension(
-        'sode.cysode',
-        [os.path.join('sode', 'cysode.pyx'),
-         os.path.join('sode', 'cfiles', 'randnorm.c')],
-        include_dirs=[numpy.get_include()]
-    ),
+    sode_extension('sode.cysode', os.path.join('sode', 'cysode.pyx')),
     example_extension('weiner'),
 ]
 
