@@ -9,6 +9,7 @@ from libc cimport math
 import numpy as np
 cimport numpy as np
 
+
 cdef extern from "numpy/arrayobject.h":
     int _import_array()
     int _import_umath()
@@ -28,17 +29,11 @@ cdef extern from "cfiles/randnorm.h":
 randnorm_seed(RANDNORM_SEED_PID_TIME)
 
 DTYPE = np.float64
-ctypedef np.float64_t DTYPE_t
 
 cdef class CYSODE:
 
-    cdef public int nvars
-    cdef readonly unsigned int x
-    cdef public _sys_opts
-
     def __cinit__(self):
         self.nvars = 1
-        self.x = 0
 
     cpdef drift(self, np.ndarray[DTYPE_t, ndim=1] a,
                       np.ndarray[DTYPE_t, ndim=1] x, double t):
@@ -49,10 +44,10 @@ cdef class CYSODE:
         self._diffusion(<double*>b.data, <double*>x.data, t)
 
     cdef _drift(self, double* a, double* x, double t):
-        a[self.x] = 0.0
+        raise NotImplementedError("Subclasses need to override this.")
 
     cdef _diffusion(self, double* b, double* x, double t):
-        b[self.x] = 1.0
+        raise NotImplementedError("Subclasses need to override this.")
 
     cdef _solve_EM(self, double* x1, double t1, double* x2, double dt,
                          double sqrtdt, double *a, double *b):
