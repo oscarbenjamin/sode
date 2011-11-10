@@ -2,6 +2,8 @@
 #
 # Defines the CYSODE Extension type
 
+import cython
+
 from libc cimport math
 
 import numpy as np
@@ -25,22 +27,40 @@ cdef extern from "cfiles/randnorm.h":
         RANDNORM_SEED_PID_TIME
 randnorm_seed(RANDNORM_SEED_PID_TIME)
 
+DTYPE = np.float64
+ctypedef np.float64_t DTYPE_t
+
 cdef class CYSODE:
 
-    nvars = 1
+    cdef public int nvars
+    cdef readonly unsigned int x
     cdef public _sys_opts
 
-    cpdef drift(self, np.ndarray a, np.ndarray x, double t):
-        if a is None or x is None:
-            raise ValueError("Invalid args")
-        a[0] = 0
-        return a
+    def __cinit__(self):
+        self.nvars = 1
+        self.x = 0
 
-    cpdef diffusion(self, np.ndarray b, np.ndarray x, double t):
-        if b is None or x is None:
-            raise ValueError("Invalid args")
-        b[0] = 1
-        return b
+    cpdef drift(self, np.ndarray[DTYPE_t, ndim=1] a,
+                      np.ndarray[DTYPE_t, ndim=1] x, double t):
+        self._drift(<double*>a.data, <double*>x.data, t)
+
+    cpdef diffusion(self, np.ndarray[DTYPE_t, ndim=1] b,
+                          np.ndarray[DTYPE_t, ndim=1] x, double t):
+        self._diffusion(<double*>b.data, <double*>x.data, t)
+
+    cdef _drift(self, double* a, double* x, double t):
+        a[self.x] = 0.0
+
+    cdef _diffusion(self, double* b, double* x, double t):
+        b[self.x] = 1.0
+
+    cdef _solve_EM(self, double* x1, double t1, double* x2, double dt,
+                         double sqrtdt, double *a, double *b):
+        cdef unsigned int i
+        self._drift(a, x1, t1)
+        self._diffusion(b, x1, t1)
+        for i in range(self.nvars):
+            x2[i] = x1[i] + a[i] * dt + b[i] * sqrtdt * RANDNORM_NORMAL()
 
     cpdef get_x0(self):
         return np.array([0], np.float64)
@@ -51,14 +71,14 @@ cdef class CYSODE:
     def get_variables(self):
         return ['x']
 
-    cpdef solveto(self, np.ndarray x1, double t1,
-                        np.ndarray x2, double t2, double dtmax):
+    cpdef solveto(self, np.ndarray[DTYPE_t, ndim=1] x1, double t1,
+                        np.ndarray[DTYPE_t, ndim=1] x2, double t2, double dtmax):
         cdef double t = t1, tnext = t, dt = dtmax
         cdef double sqrtdt = math.sqrt(dt)
         cdef double temp
-        cdef np.ndarray a = np.zeros(self.nvars)
-        cdef np.ndarray b = np.zeros(self.nvars)
-        cdef np.ndarray x = np.zeros(self.nvars)
+        cdef np.ndarray[DTYPE_t, ndim=1] a = np.zeros(self.nvars, DTYPE)
+        cdef np.ndarray[DTYPE_t, ndim=1] b = np.zeros(self.nvars, DTYPE)
+        cdef np.ndarray[DTYPE_t, ndim=1] x = np.zeros(self.nvars, DTYPE)
         for i in range(self.nvars):
             x[i] = x1[i]
         while t < t2:
@@ -67,10 +87,8 @@ cdef class CYSODE:
                 tnext = t2
                 dt = t2 - t
                 sqrtdt = math.sqrt(dt)
-            self.drift(a, x, t)
-            self.diffusion(b, x, t)
-            for i in range(self.nvars):
-                x[i] += a[i] * dt + b[i] * sqrtdt * RANDNORM_NORMAL()
+            self._solve_EM(<double*>x.data, t, <double*>x.data, dt,
+                           sqrtdt, <double*>a.data, <double*>b.data)
             t = tnext
         for i in range(self.nvars):
             x2[i] = x[i]

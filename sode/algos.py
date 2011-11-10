@@ -302,11 +302,13 @@ def solve(sodeinst, x0, t, dtmax=0.001, method=None):
 
     # Iteratively integrate from x[n], t[n] to x[n+1] t[n+1]
     Xt[0, :] = xi = x0
-    for n in range(Ntimes - 1):
 
-        if hasattr(sodeinst, 'solveto'):
+    if hasattr(sodeinst, 'solveto'):
+        for n in range(Ntimes - 1):
             sodeinst.solveto(Xt[n, :], t[n], Xt[n+1,:], t[n+1], dtmax)
-            continue
+        return Xt
+
+    for n in range(Ntimes - 1):
 
         # Break into substeps and generate BrownianIncrements
         Nsteps, dt = largest_dt(t[n+1] - t[n], dtmax)
