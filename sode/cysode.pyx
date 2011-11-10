@@ -35,6 +35,7 @@ cdef class CYSODE:
 
     def __cinit__(self):
         self.nvars = 0
+        self._owned = 0
 
     def __init__(self, **kwargs):
         self._init_pv(self.parameters, self.variables)
@@ -106,3 +107,34 @@ cdef class CYSODE:
     set_parameter   = pysode._set_parameter
     get_description = pysode._get_description
 
+
+cdef class CYSODENetwork(CYSODE):
+
+    def __cinit__(self):
+        self._subsystems = []
+        self._subsysdict = {}
+        self._ss_eval = []
+
+    cdef void _drift_subsys(self, double* a, double* x, double t):
+        """Compute drift for subsystems. Subclasses must call this in drift"""
+        cdef unsigned int N = len(self._ss_eval)
+        for i in range(N):
+            (<CYSODE>self._ss_eval[i])._drift(a, x, t)
+
+    cdef void _diffusion_subsys(self, double* b, double* x, double t):
+        """Compute diffusion for subsystems. Subclasses must call this in
+        diffusion"""
+        cdef unsigned int N = len(self._ss_eval)
+        for i in range(N):
+            (<CYSODE>self._ss_eval[i])._diffusion(b, x, t)
+
+    add_subsystem  = pysode._n_add_subsystem
+    _shift_indices = pysode._n__shift_indices
+    get_parameters = pysode._n_get_parameters
+    get_variables  = pysode._n_get_variables
+    _get_subsystem = pysode._n__get_subsystem
+    get_parameter  = pysode._n_get_parameter
+    set_parameter  = pysode._n_set_parameter
+    get_ic         = pysode._n_get_ic
+    set_ic         = pysode._n_set_ic
+    _init          = pysode._n__init

@@ -239,6 +239,113 @@ class SODE(object):
     set_parameter   = _set_parameter
     get_description = _get_description
 
+# Add subsystem is called before __init__ so need to check everything here
+def _n_add_subsystem(self, name, subsys):
+    """Add a subsystem"""
+    # Subsystem cannot be owned twice
+    #if hasattr(subsys, '_owned'):
+    #    msg = "Cannot add already owned subsystem '{0}'".format(name)
+    #    raise ValueError(msg)
+    #subsys._owned = self
+
+    # Parameter access is non-unique if there are duplicate names
+    if name in self._subsysdict:
+        msg = "Duplicate subsystem name '{0}'".format(name)
+        raise ValueError(msg)
+
+    # Store subsystems and names
+    self._subsystems.append((name, subsys))
+    self._subsysdict[name] = subsys
+
+def _n__shift_indices(self, n, x0):
+    # Shift child indices as well as own
+    _shift_indices_(self, n, x0)
+    for name, sys in self._subsystems:
+        _shift_indices_(sys, n, x0)
+
+def _n_get_parameters(self):
+    # Retrieve own parameters
+    pars = _get_parameters(self)
+    # Retrieve subsystem parameters, with name prepended
+    for name, sys in self._subsystems:
+        for par in sys.get_parameters():
+            pars.append('{0}.{1}'.format(name, par))
+    return pars
+
+def _n_get_variables(self):
+    # Retrieve own parameters
+    vars_ = _get_variables(self)
+    # Retrieve subsystem parameters, with name prepended
+    for name, sys in self._subsystems:
+        for var in sys.get_variables():
+            vars_.append('{0}.{1}'.format(name, var))
+    return vars_
+
+# Use this to override get_/set_ par ic methods
+
+def _n__get_subsystem(self, pv_name):
+    names = pv_name.split('.')
+    snames, pv = names[:-1], names[-1]
+    sys = self
+    for sn in snames:
+        if not hasattr(sys, '_subsysdict'):
+            raise ValueError("No such subsystem '{0}'".format(sn))
+        sys = sys._subsysdict[sn]
+    return sys, pv
+
+def _n_get_parameter(self, par):
+    """Returns parameter value. Raises ValueError if unrecognised"""
+    ss, par = self._get_subsystem(par)
+    return _get_parameter(ss, par)
+
+def _n_set_parameter(self, par, val):
+    """Set initial condition for var to float(val)"""
+    ss, par = self._get_subsystem(par)
+    _set_parameter(ss, par, val)
+
+def _n_get_ic(self, var):
+    """Returns initial condition. Raises ValueError if unrecognised"""
+    ss, var = self._get_subsystem(var)
+    return _get_ic(ss, var)
+
+def _n_set_ic(self, var, val):
+    """Set initial condition for var to float(val)"""
+    ss, var = self._get_subsystem(var)
+    _set_ic(ss, var, val)
+
+    # Subclasses must call these. They use self._ss_eval for efficiency
+
+def _n__init(self, **kwargs):
+    """Flattens subsystems into single x0 and shifts indices"""
+
+    # Determine indices of subsystems within larger state vector
+    ntotal = self.nvars
+    indices = []
+    for name, sys in self._subsystems:
+        indices.append((sys, ntotal))
+        ntotal += sys.nvars
+
+    # Create larger x0, and copy own values to the beginning
+    x0 = np.zeros(ntotal)
+    x0[:self.nvars] = self._x0
+    self._x0 = x0
+    self.nvars = ntotal
+
+    # Now make all subsystems use a view into the larger array
+    # Also copys subsystems values into the array
+    for sys, n1 in indices:
+        sys._shift_indices(n1, x0)
+
+    # Compile list to be used in drift_subsys and diffusion_subsys
+    # zero-d systems (just parameters) should be ignored for efficiency
+    self._ss_eval = []
+    for name, sys in self._subsystems:
+        if sys.nvars:
+            self._ss_eval.append(sys)
+
+    # Now read off kwargs
+    _init_kw_(self, **kwargs)
+
 class SODENetwork(SODE):
     """Specialises SODE for a system defined in terms of subsystems"""
 
@@ -250,113 +357,6 @@ class SODENetwork(SODE):
 
         # Initialise own parameters, variables with no kwargs
         super(SODENetwork, self).__init__()
-
-    def init(self, **kwargs):
-        """Flattens subsystems into single x0 and shifts indices"""
-
-        # Determine indices of subsystems within larger state vector
-        ntotal = self.nvars
-        indices = []
-        for name, sys in self._subsystems:
-            indices.append((sys, ntotal))
-            ntotal += sys.nvars
-
-        # Create larger x0, and copy own values to the beginning
-        x0 = np.zeros(ntotal)
-        x0[:self.nvars] = self._x0
-        self._x0 = x0
-        self.nvars = ntotal
-
-        # Now make all subsystems use a view into the larger array
-        # Also copys subsystems values into the array
-        for sys, n1 in indices:
-            sys._shift_indices(n1, x0)
-
-        # Compile list to be used in drift_subsys and diffusion_subsys
-        # zero-d systems (just parameters) should be ignored for efficiency
-        self._ss_eval = []
-        for name, sys in self._subsystems:
-            if sys.nvars:
-                self._ss_eval.append(sys)
-
-        # Now read off kwargs
-        _init_kw(self, **kwargs)
-
-    # Add subsystem is called before __init__ so need to check everything here
-    def add_subsystem(self, name, subsys):
-        """Add a subsystem"""
-        # Subsystem cannot be owned twice
-        if hasattr(subsys, '_owned'):
-            msg = "Cannot add already owned subsystem '{0}'".format(name)
-            raise ValueError(msg)
-        subsys._owned = self
-
-        # Parameter access is non-unique if there are duplicate names
-        if name in self._subsysdict:
-            msg = "Duplicate subsystem name '{0}'".format(name)
-            raise ValueError(msg)
-
-        # Store subsystems and names
-        self._subsystems.append((name, subsys))
-        self._subsysdict[name] = subsys
-
-    def _shift_indices(self, n, x0):
-        # Shift child indices as well as own
-        super(SODENetwork, self)._shift_indices(n, x0)
-        for name, sys in self._subsystems:
-            sys._shift_indices(n, x0)
-
-    def get_parameters(self):
-        # Retrieve own parameters
-        pars = super(SODENetwork, self).get_parameters()
-        # Retrieve subsystem parameters, with name prepended
-        for name, sys in self._subsystems:
-            for par in sys.get_parameters():
-                pars.append('{0}.{1}'.format(name, par))
-        return pars
-
-    def get_variables(self):
-        # Retrieve own parameters
-        vars_ = super(SODENetwork, self).get_variables()
-        # Retrieve subsystem parameters, with name prepended
-        for name, sys in self._subsystems:
-            for var in sys.get_variables():
-                vars_.append('{0}.{1}'.format(name, var))
-        return vars_
-
-    # Use this to override get_/set_ par ic methods
-
-    def _get_subsystem(self, pv_name):
-        names = pv_name.split('.')
-        snames, pv = names[:-1], names[-1]
-        sys = self
-        for sn in snames:
-            if not hasattr(sys, '_subsysdict'):
-                raise ValueError("No such subsystem '{0}'".format(sn))
-            sys = sys._subsysdict[sn]
-        return sys, pv
-
-    def get_parameter(self, par):
-        """Returns parameter value. Raises ValueError if unrecognised"""
-        ss, par = self._get_subsystem(par)
-        return SODE.get_parameter(ss, par)
-
-    def set_parameter(self, par, val):
-        """Set initial condition for var to float(val)"""
-        ss, par = self._get_subsystem(par)
-        return SODE.set_parameter(ss, par, val)
-
-    def get_ic(self, var):
-        """Returns initial condition. Raises ValueError if unrecognised"""
-        ss, var = self._get_subsystem(var)
-        return SODE.get_ic(ss, var)
-
-    def set_ic(self, var, val):
-        """Set initial condition for var to float(val)"""
-        ss, var = self._get_subsystem(var)
-        return SODE.set_ic(ss, var, val)
-
-    # Subclasses must call these. They use self._ss_eval for efficiency
 
     def drift_subsys(self, a, x, t):
         """Compute drift for subsystems. Subclasses must call this in drift"""
@@ -370,6 +370,18 @@ class SODENetwork(SODE):
         for sys in self._ss_eval:
             sys.diffusion(b, x, t)
         return b
+
+    add_subsystem  = _n_add_subsystem
+    _shift_indices = _n__shift_indices
+    get_parameters = _n_get_parameters
+    get_variables  = _n_get_variables
+    _get_subsystem = _n__get_subsystem
+    get_parameter  = _n_get_parameter
+    set_parameter  = _n_set_parameter
+    get_ic         = _n_get_ic
+    set_ic         = _n_set_ic
+    _init          = _n__init
+
 
 
 # Quick test suite to demonstrate usage of sode.py and script.py
