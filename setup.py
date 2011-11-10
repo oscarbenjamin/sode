@@ -15,7 +15,8 @@ def sode_extension(modname, pyxname):
     return Extension(
         modname,
         [pyxname, os.path.join('sode', 'cfiles', 'randnorm.c')],
-        include_dirs=[numpy.get_include(), '.']
+        include_dirs=[numpy.get_include(), '.'],
+        libraries=['m', 'rt']
     )
 
 ext_modules = [
