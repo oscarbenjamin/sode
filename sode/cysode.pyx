@@ -9,6 +9,7 @@ from libc cimport math
 import numpy as np
 cimport numpy as np
 
+from sode import pysode
 
 cdef extern from "numpy/arrayobject.h":
     int _import_array()
@@ -33,7 +34,11 @@ DTYPE = np.float64
 cdef class CYSODE:
 
     def __cinit__(self):
-        self.nvars = 1
+        self.nvars = 0
+
+    def __init__(self, **kwargs):
+        self._init_pv(self.parameters, self.variables)
+        self._init_kw(**kwargs)
 
     cpdef drift(self, np.ndarray[DTYPE_t, ndim=1] a,
                       np.ndarray[DTYPE_t, ndim=1] x, double t):
@@ -57,15 +62,6 @@ cdef class CYSODE:
         for i in range(self.nvars):
             x2[i] = x1[i] + a[i] * dt + b[i] * sqrtdt * RANDNORM_NORMAL()
 
-    cpdef get_x0(self):
-        return np.array([0], np.float64)
-
-    def get_description(self):
-        return "CYSODE!!!!!"
-
-    def get_variables(self):
-        return ['x']
-
     cpdef solveto(self, np.ndarray[DTYPE_t, ndim=1] x1, double t1,
                         np.ndarray[DTYPE_t, ndim=1] x2, double t2, double dtmax):
         cdef double t = t1, tnext = t, dt = dtmax
@@ -87,3 +83,21 @@ cdef class CYSODE:
             t = tnext
         for i in range(self.nvars):
             x2[i] = x[i]
+
+    # These functions are recycled from pysode
+    _init_pv        = pysode._init_pv_
+    _init_kw        = pysode._init_kw_
+    _shift_indices  = pysode._shift_indices_
+    _get_var_index  = pysode._get_var_index_
+    _set_var_index  = pysode._set_var_index_
+    _varchk         = pysode._varchk_
+    _parchk         = pysode._parchk_
+    get_variables   = pysode._get_variables
+    get_ic          = pysode._get_ic
+    set_ic          = pysode._set_ic
+    get_x0          = pysode._get_x0
+    get_parameters  = pysode._get_parameters
+    get_parameter   = pysode._get_parameter
+    set_parameter   = pysode._set_parameter
+    get_description = pysode._get_description
+
