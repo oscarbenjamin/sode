@@ -43,18 +43,23 @@ cdef class CYSODE:
     cpdef drift(self, np.ndarray[DTYPE_t, ndim=1] a,
                       np.ndarray[DTYPE_t, ndim=1] x, double t):
         self._drift(<double*>a.data, <double*>x.data, t)
+        return a
 
     cpdef diffusion(self, np.ndarray[DTYPE_t, ndim=1] b,
                           np.ndarray[DTYPE_t, ndim=1] x, double t):
         self._diffusion(<double*>b.data, <double*>x.data, t)
+        return b
 
-    cdef _drift(self, double* a, double* x, double t):
+    cdef void _drift(self, double* a, double* x, double t):
         raise NotImplementedError("Subclasses need to override this.")
 
-    cdef _diffusion(self, double* b, double* x, double t):
+    cdef void _diffusion(self, double* b, double* x, double t):
         raise NotImplementedError("Subclasses need to override this.")
 
-    cdef _solve_EM(self, double* x1, double t1, double* x2, double dt,
+    def exact(self, x, t, Wt):
+        raise NotImplementedError("Subclasses need to override this.")
+
+    cdef void _solve_EM(self, double* x1, double t1, double* x2, double dt,
                          double sqrtdt, double *a, double *b):
         cdef unsigned int i
         self._drift(a, x1, t1)

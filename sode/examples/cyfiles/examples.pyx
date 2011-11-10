@@ -56,11 +56,11 @@ cdef class Weiner(CYSODE):
 
     # The drift coefficient of the SODE. We can access the parameter mu by
     # simply writing 'self.mu'.
-    cdef _drift(self, double* a, double* x, double t):
+    cdef void _drift(self, double* a, double* x, double t):
         a[self.x] = self.mu
 
     # The diffusion coefficient of the SODE.
-    cdef _diffusion(self, double* b, double* x, double t):
+    cdef void _diffusion(self, double* b, double* x, double t):
         b[self.x] = self.sigma
 
     # The exact solution. If provided, this will be used to check numerical
@@ -83,11 +83,11 @@ cdef class LinearAdditive2D(CYSODE):
     cdef public variable x, y
     cdef public parameter alpha, beta
 
-    cdef _drift(self, double* a, double* x, double t):
+    cdef void _drift(self, double* a, double* x, double t):
         a[self.x] = - self.beta * x[self.x] + self.alpha * x[self.y]
         a[self.y] = - self.beta * x[self.y] - self.alpha * x[self.x]
 
-    cdef _diffusion(self, double* b, double* x, double t):
+    cdef void _diffusion(self, double* b, double* x, double t):
         b[self.x] = b[self.y] = 1
 
 
@@ -106,14 +106,14 @@ cdef class LinearMultiplicative(CYSODE):
     cdef public variable x
     cdef public parameter alpha, beta
 
-    cdef _drift(self, double* a, double* x, double t):
+    cdef void _drift(self, double* a, double* x, double t):
         a[self.x] = self.alpha * x[self.x]
 
-    cdef _diffusion(self, double* b, double* x, double t):
+    cdef void _diffusion(self, double* b, double* x, double t):
         b[self.x] = self.beta * x[self.x]
 
     def exact(self, x0, t, Wt):
-        factor = self.alpha
+        factor = self.alpha - 0.5 * self.beta ** 2
         return x0 * np.exp(factor * t + self.beta * Wt)
 
 
@@ -131,10 +131,10 @@ cdef class SinusoidalMultiplicative(CYSODE):
     cdef public variable x
     cdef public parameter alpha
 
-    cdef _drift(self, double* a, double* x, double t):
+    cdef void _drift(self, double* a, double* x, double t):
         a[self.x] = - (self.alpha**2 * x[self.x]) / 2
 
-    cdef _diffusion(self, double* b, double* x, double t):
+    cdef void _diffusion(self, double* b, double* x, double t):
         b[self.x] = self.alpha * math.sqrt(1 - x[self.x]**2)
 
     def exact(self, x0, t, Wt):
@@ -155,10 +155,10 @@ cdef class TangentMultiplicative(CYSODE):
     cdef public variable x
     cdef public parameter alpha
 
-    cdef _drift(self, double* a, double* x, double t):
+    cdef void _drift(self, double* a, double* x, double t):
         a[self.x] = self.alpha**2 * x[self.x] * (1 + x[self.x]**2)
 
-    cdef _diffusion(self, double* b, double* x, double t):
+    cdef void _diffusion(self, double* b, double* x, double t):
         b[self.x] = self.alpha * (1 + x[self.x]**2)
 
     def exact(self, x0, t, Wt):
