@@ -11,19 +11,21 @@ import numpy
 
 import sode
 
-def sode_extension(modname, pyxname):
-    return Extension(
-        modname,
-        [pyxname, os.path.join('sode', 'cfiles', 'randnorm.c')],
-        include_dirs=[numpy.get_include(), '.'],
-        libraries=['m', 'rt']
-    )
 
 ext_modules = [
-    sode_extension('sode.cysode',
-                   os.path.join('sode', 'cysode.pyx')),
-    sode_extension('sode.examples.cyfiles.examples',
-                   os.path.join('sode', 'examples', 'cyfiles', 'examples.pyx')),
+    Extension(
+        'sode.cysode',
+        [os.path.join('sode', 'cysode.pyx'),
+         os.path.join('sode', 'cfiles', 'randnorm.c')],
+        include_dirs=[numpy.get_include(), '.'],
+        libraries=['m', 'rt']
+    ),
+    Extension(
+        'sode.examples.cyfiles.examples',
+        [os.path.join('sode', 'examples', 'cyfiles', 'examples.pyx')],
+        include_dirs=[numpy.get_include()],
+        libraries = ['m']
+    )
 ]
 
 setup(
