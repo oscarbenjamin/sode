@@ -6,7 +6,9 @@
 /* This is to use OS-specific stuff when initialising the seed */
 #if WIN32 | _WIN32 | __WIN32__
     #define WINDOWS 1
-#elif __unix__ | __posix__ | __linux__ | __APPLE__
+#elif __APPLE__ & __MACH__
+    #define OSX 1
+#elif __unix__ | __posix__ | __linux__
     #define NIX 1
 #else
     /* Unrecognised system so just use the standard c time() function */
@@ -26,6 +28,10 @@
     #include <windows.h>
 #elif NIX
     #include <unistd.h>
+#elif OSX
+    #include <unistd.h>
+    #include <mach/clock.h>
+    #include <mach/mach.h>
 #endif
 
 
@@ -66,6 +72,15 @@ unsigned int initial_seed(void) {
     clock_gettime(CLOCK_MONOTONIC, &ts);
     pid = getpid();
     tprec = ts.tv_nsec;
+#elif OSX
+    /* OSX doesn't have clock_gettime(): use clock_get_time() */
+    clock_serv_t cclock;
+    mach_timespec_t mts;
+    host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &cclock);
+    clock_get_time(cclock, &mts);
+    mach_port_deallocate(mach_task_self(), cclock);
+    pid = getpid();
+    tprec = mts.tv_nsec;
 #elif WINDOWS
     double microseconds;
     LARGE_INTEGER clockfreq, t;
@@ -79,7 +94,7 @@ unsigned int initial_seed(void) {
     pid = _getpid();
 #endif
     seed = RANDNORM_CONG(time(NULL));
-#if NIX | WINDOWS
+#if OSX | NIX | WINDOWS
     seed ^= RANDNORM_CONG(pid);
     seed ^= RANDNORM_CONG(tprec);
 #endif
