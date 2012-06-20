@@ -8,8 +8,8 @@
 import sys
 
 import numpy as np
-from opster import dispatch
 
+from sode.opster import dispatch
 from sode.pysode import SODE
 from sode.algos import solve, solve_bm, BrownianMotion
 from sode.io import load_csv, save_csv
