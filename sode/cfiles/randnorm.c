@@ -1,6 +1,6 @@
 /*
  * For generating random normals. The Box Muller and Ziggurat algorithms
- * adapted from Jeremy Lea and Marsaglis and Tsang.
+ * adapted from Jeremy Lea and Marsaglia and Tsang.
  */
 
 /* This is to use OS-specific stuff when initialising the seed */
