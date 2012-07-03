@@ -43,6 +43,7 @@ else:
 
 cmdclass = {}
 ext_modules = []
+scripts = []
 
 # Need to add the pyxname of compiling fully with cython or the cname when
 # compiling from sdist without cython.
@@ -78,7 +79,7 @@ add_cython_ext_module('sode.examples.cyfiles.examples',
 def build_examples_cprog(compiler):
     cfiles = ['main.c', 'examples.c', 'randnorm.c', 'solvers.c']
     cfiles = [os.path.join('sode', 'cfiles', p) for p in cfiles]
-    exe_name = os.path.join('sode', 'examples', 'cexamples')
+    exe_name = os.path.join('scripts', 'sode-cexamples')
     compiler.link_executable(cfiles, exe_name, libraries=libs_cexamples)
 
 
@@ -90,6 +91,20 @@ class MonkeyPatch_build_ext(build_ext):
 
 cmdclass['build_ext'] = MonkeyPatch_build_ext
 
+
+# Executable entry points in scripts
+scripts = [
+    'scripts/sode',
+    'scripts/sode-pyexamples',
+    'scripts/sode-cyexamples',
+    'scripts/sode-cexamples',
+]
+if 'win' in sys.platform:
+    scripts.extend([
+        'scripts/sode.bat',
+        'scripts/sode-cyexamples.bat',
+        'scripts/sode-pyexamples.bat',
+    ])
 
 # Use the README.rst file as the front-page on PyPI
 #with open('README.rst') as README:
@@ -138,5 +153,5 @@ setup(
     cmdclass = cmdclass,
     ext_modules = ext_modules,
     packages = ['sode', 'sode.examples'],
-    scripts = ['scripts/sode', 'scripts/sode.bat']
+    scripts = scripts
 )
