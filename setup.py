@@ -99,6 +99,10 @@ setup(
         'Programming Language :: Python :: 2.7',
     ],
 
+    # Package management concepts
+    provides = ['sode'],
+    requires = ['numpy (>=1.4)', 'cython (>=0.15)'],
+
     # Now the content
     cmdclass = {'build_ext': build_ext},
     ext_modules = ext_modules,
