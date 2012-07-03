@@ -32,10 +32,13 @@ else:
 
 # Need to link with libm and librt on posix but not on Windows.
 if not 'win' in sys.platform:
-    libraries_cysode = ['m', 'rt']
-    libraries_examples = ['m']
+    libs_cysode = ['m', 'rt']
+    libs_cyexamples = ['m']
+    libs_cexamples = ['m', 'rt']
 else:
-    libraries_cysode = libraries_examples = []
+    libs_cysode = []
+    libs_cyexamples = []
+    libs_cexamples = []
 
 
 cmdclass = {}
@@ -59,7 +62,7 @@ add_cython_ext_module('sode.cysode',
     os.path.join('sode', 'cysode.pyx'),
     [os.path.join('sode', 'cfiles', 'randnorm.c')],
     include_dirs = [numpy.get_include(), '.'],
-    libraries = libraries_cysode,
+    libraries = libs_cysode,
 )
 
 
@@ -67,21 +70,23 @@ add_cython_ext_module('sode.cysode',
 add_cython_ext_module('sode.examples.cyfiles.examples',
     os.path.join('sode', 'examples', 'cyfiles', 'examples.pyx'),
     include_dirs = [numpy.get_include(), '.'],
-    libraries = libraries_cysode,
+    libraries = libs_cyexamples,
 )
 
 
-cprog_cfiles = ['main.c', 'examples.c', 'randnorm.c', 'solvers.c']
-cprog_cfiles = [os.path.join('sode', 'cfiles', p) for p in cprog_cfiles]
-cprog_name = os.path.join('sode', 'examples', 'cexamples')
+# We also need to build the examples c-program
+def build_examples_cprog(compiler):
+    cfiles = ['main.c', 'examples.c', 'randnorm.c', 'solvers.c']
+    cfiles = [os.path.join('sode', 'cfiles', p) for p in cfiles]
+    exe_name = os.path.join('sode', 'examples', 'cexamples')
+    compiler.link_executable(cfiles, exe_name, libraries=libs_cexamples)
 
 
 # We also want to build the standalone c program for the examples
 class MonkeyPatch_build_ext(build_ext):
     def run(self):
         build_ext.run(self)
-        self.compiler.link_executable(cprog_cfiles, cprog_name)
-
+        build_examples_cprog(self.compiler)
 
 cmdclass['build_ext'] = MonkeyPatch_build_ext
 
@@ -125,7 +130,7 @@ setup(
         'Programming Language :: Python :: 2.7',
     ],
 
-    # Package management concepts
+    # Dependency information
     provides = ['sode'],
     requires = ['numpy (>=1.4)', 'cython (>=0.15)'],
 
