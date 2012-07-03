@@ -1,0 +1,5 @@
+include MANIFEST.in
+include sode/cfiles/build.sh
+recursive-include sode *.pxd *.c *.h
+include addpath.sh
+include addpath.bat

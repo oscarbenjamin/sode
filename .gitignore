@@ -2,3 +2,5 @@
 *.so
 *.pyd
 build
+dist
+MANIFEST
