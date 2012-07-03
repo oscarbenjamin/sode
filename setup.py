@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright Oscar Benjamin 2011 under new BSD license
+# Copyright Oscar Benjamin 2011 under GPLv3+
 
 import os, os.path, sys
 from distutils.core import setup
@@ -16,7 +16,7 @@ import numpy
 #
 # Ensuring that the c-files are distributed in the source distribution means
 # adding the names of the c-files to MANIFEST.in and ensuring that the cython
-# generated c-files are up to date by running:
+# generated c-files are up to date by remembering to do:
 #
 #    $ python setup.py build_ext
 #    $ python setup.py sdist
@@ -37,27 +37,38 @@ else:
     libraries_cysode = libraries_examples = []
 
 
-# Extension modules in this distribution
-ext_modules = [
+cmdclass = {}
+ext_modules = []
 
-    # This is a core part of sode
-    Extension(
-        'sode.cysode',
-        [os.path.join('sode', 'cysode.pyx'),
-         os.path.join('sode', 'cfiles', 'randnorm.c')],
-        include_dirs=[numpy.get_include(), '.'],
-        libraries=libraries_cysode
-    ),
+# Need to add the pyxname of compiling fully with cython or the cname when
+# compiling from sdist without cython.
+def add_cython_ext_module(modname, pyxname, cnames=[], **kwargs):
+    # Use cython to copmile the pyx file
+    if use_cython:
+        ext = Extension(modname, [pyxname] + cnames, **kwargs)
+        cmdclass['build_ext'] = build_ext
+    # Use distutils to compile the c file
+    else:
+        cname = os.path.splitaxt(pyxname)[0] + '.c'
+        ext = Extension(modname, [cname] + cnames, **kwargs)
+    ext_modules.append(ext)
 
-    # This is a module containing examples defined in cython
-    Extension(
-        'sode.examples.cyfiles.examples',
-        [os.path.join('sode', 'examples', 'cyfiles', 'examples.pyx')],
-        include_dirs=[numpy.get_include()],
-        libraries = libraries_examples
-    )
 
-]
+# This extension module is a core part of sode
+add_cython_ext_module('sode.cysode',
+    os.path.join('sode', 'cysode.pyx'),
+    [os.path.join('sode', 'cfiles', 'randnorm.c')],
+    include_dirs = [numpy.get_include(), '.'],
+    libraries = libraries_cysode,
+)
+
+
+# This extension module is for the examples
+add_cython_ext_module('sode.examples.cyfiles.examples',
+    os.path.join('sode', 'examples', 'cyfiles', 'examples.pyx'),
+    include_dirs = [numpy.get_include(), '.'],
+    libraries = libraries_cysode,
+)
 
 
 # Use the README.rst file as the front-page on PyPI
@@ -104,7 +115,7 @@ setup(
     requires = ['numpy (>=1.4)', 'cython (>=0.15)'],
 
     # Now the content
-    cmdclass = {'build_ext': build_ext},
+    cmdclass = cmdclass,
     ext_modules = ext_modules,
     packages = ['sode', 'sode.examples'],
     scripts = ['scripts/sode', 'scripts/sode.bat']
