@@ -5,6 +5,7 @@
 import os, os.path, sys
 from distutils.core import setup
 from distutils.extension import Extension
+from distutils.command.build_ext import build_ext
 
 import numpy
 
@@ -46,7 +47,6 @@ def add_cython_ext_module(modname, pyxname, cnames=[], **kwargs):
     # Use cython to copmile the pyx file
     if use_cython:
         ext = Extension(modname, [pyxname] + cnames, **kwargs)
-        cmdclass['build_ext'] = build_ext
     # Use distutils to compile the c file
     else:
         cname = os.path.splitaxt(pyxname)[0] + '.c'
@@ -69,6 +69,21 @@ add_cython_ext_module('sode.examples.cyfiles.examples',
     include_dirs = [numpy.get_include(), '.'],
     libraries = libraries_cysode,
 )
+
+
+cprog_cfiles = ['main.c', 'examples.c', 'randnorm.c', 'solvers.c']
+cprog_cfiles = [os.path.join('sode', 'cfiles', p) for p in cprog_cfiles]
+cprog_name = os.path.join('sode', 'examples', 'cexamples')
+
+
+# We also want to build the standalone c program for the examples
+class MonkeyPatch_build_ext(build_ext):
+    def run(self):
+        build_ext.run(self)
+        self.compiler.link_executable(cprog_cfiles, cprog_name)
+
+
+cmdclass['build_ext'] = MonkeyPatch_build_ext
 
 
 # Use the README.rst file as the front-page on PyPI
