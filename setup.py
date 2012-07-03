@@ -60,9 +60,46 @@ ext_modules = [
 ]
 
 
+# Use the README.rst file as the front-page on PyPI
+#with open('README.rst') as README:
+#    LONG_DESCRIPTION = README.read()
+
+
 # Standard distutils setup
 setup(
+    # First the metadata
     name = 'sode',
+    version = '0.0.1',
+    author = 'Oscar Benjamin',
+    author_email = 'oscar.j.benjamin@gmail.com',
+    url = 'https://github.com/oscarbenjamin/sode',
+    description = ('Python/Cython lib for solving ' +
+                   'Stochastic Ordinary Differential Equations'),
+    # long_description = open('README.rst').read()
+    platforms = ['linux2', 'win32', 'darwin'], # tested on these
+    license = 'GPLv3+',
+
+    classifiers = [
+        'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
+
+        'Intended Audience :: Science/Research',
+
+        'Topic :: Scientific/Engineering :: Mathematics',
+        'Topic :: Scientific/Engineering :: Physics',
+        'Topic :: Scientific/Engineering :: Chemistry',
+        'Topic :: Scientific/Engineering :: Bio-Informatics',
+
+        'Operating System :: POSIX :: Linux',
+        'Operating System :: Microsoft :: Windows',
+        'Operating System :: MacOS :: MacOS X',
+
+        'Programming Language :: Cython',
+        'Programming Language :: Python :: Implementation :: CPython',
+        'Programming Language :: Python :: 2.6',
+        'Programming Language :: Python :: 2.7',
+    ],
+
+    # Now the content
     cmdclass = {'build_ext': build_ext},
     ext_modules = ext_modules,
     packages = ['sode', 'sode.examples'],
