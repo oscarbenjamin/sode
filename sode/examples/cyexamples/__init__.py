@@ -8,13 +8,9 @@
 
 from sode.script import MultiScript
 
-from sode.examples.pyfiles.weiner import Weiner
-from sode.examples.pyfiles.weiner2 import Weiner2
-from sode.examples.pyfiles.lin2d import LinearAdditive2D
-from sode.examples.pyfiles.linmult import LinearMultiplicative
-from sode.examples.pyfiles.sinmult import SinusoidalMultiplicative
-from sode.examples.pyfiles.tanmult import TangentMultiplicative
-
+from sode.examples.cyexamples.examples import (
+    Weiner, Weiner2, LinearAdditive2D, LinearMultiplicative,
+    SinusoidalMultiplicative, TangentMultiplicative)
 
 sysdict = {
     None:'weiner',

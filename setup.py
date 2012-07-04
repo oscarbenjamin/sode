@@ -75,8 +75,8 @@ add_cython_ext_module('sode.cysode',
 
 
 # This extension module is for the examples
-add_cython_ext_module('sode.examples.cyfiles.examples',
-    os.path.join('sode', 'examples', 'cyfiles', 'examples.c'),
+add_cython_ext_module('sode.examples.cyexamples.examples',
+    os.path.join('sode', 'examples', 'cyexamples', 'examples.c'),
     include_dirs = [numpy.get_include(), '.'],
     libraries = libs_cyexamples,
 )
@@ -97,6 +97,8 @@ scripts_dir = 'scripts'
 # http://support.microsoft.com/default.aspx?kbid=321788
 if 'win' in sys.platform:
     scripts.extend([sname + '.bat' for sname in scripts])
+
+scripts.append('sode-time')
 
 scripts = [os.path.join(scripts_dir, sname) for sname in scripts]
 
@@ -191,6 +193,7 @@ setup(
     # Now the content
     cmdclass = cmdclass,
     ext_modules = ext_modules,
-    packages = ['sode', 'sode.examples'],
+    packages = ['sode', 'sode.examples', 'sode.examples.pyexamples',
+                                         'sode.examples.cyexamples'],
     scripts = scripts
 )
