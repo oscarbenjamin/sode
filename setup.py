@@ -129,7 +129,12 @@ def build_examples_cprog(compiler):
     exe_name = os.path.join(scripts_dir, 'sode-cexamples')
 
     compiler.link_executable(cfiles, exe_name, libraries=libs_cexamples)
-    return exe_name + compiler.exe_extension
+
+    # compiler.exe_extension is None on posix, string on Windows
+    if compiler.exe_extension is not None:
+        exe_name += compiler.exe_extension
+
+    return exe_name
 
 
 # msvcr90 needs manifest etc. See:
