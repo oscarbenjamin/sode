@@ -6,6 +6,7 @@ import os, os.path, sys
 from distutils.core import setup
 from distutils.extension import Extension
 from distutils.command.build_ext import build_ext
+from distutils.cygwinccompiler import Mingw32CCompiler # ming32 fix
 
 import numpy
 
@@ -75,29 +76,11 @@ add_cython_ext_module('sode.examples.cyfiles.examples',
 )
 
 
-# We also need to build the examples c-program
-def build_examples_cprog(compiler):
-    cfiles = ['main.c', 'examples.c', 'randnorm.c', 'solvers.c']
-    cfiles = [os.path.join('sode', 'cfiles', p) for p in cfiles]
-    exe_name = os.path.join('scripts', 'sode-cexamples')
-    compiler.link_executable(cfiles, exe_name, libraries=libs_cexamples)
-
-
-# We also want to build the standalone c program for the examples
-class MonkeyPatch_build_ext(build_ext):
-    def run(self):
-        build_ext.run(self)
-        build_examples_cprog(self.compiler)
-
-cmdclass['build_ext'] = MonkeyPatch_build_ext
-
-
 # Executable entry points in scripts
 scripts = [
     'scripts/sode',
     'scripts/sode-pyexamples',
     'scripts/sode-cyexamples',
-    'scripts/sode-cexamples',
 ]
 if 'win' in sys.platform:
     scripts.extend([
@@ -105,6 +88,41 @@ if 'win' in sys.platform:
         'scripts/sode-cyexamples.bat',
         'scripts/sode-pyexamples.bat',
     ])
+
+
+# We also want to build the standalone c program for the examples
+class MonkeyPatch_build_ext(build_ext):
+    def run(self):
+        global scripts
+        build_ext.run(self)
+        exe_name = build_examples_cprog(self.compiler)
+        scripts.append(exe_name)
+
+cmdclass['build_ext'] = MonkeyPatch_build_ext
+
+
+# We also need to build the examples c-program
+def build_examples_cprog(compiler):
+    cfiles = ['main.c', 'examples.c', 'randnorm.c', 'solvers.c']
+    cfiles = [os.path.join('sode', 'cfiles', p) for p in cfiles]
+    exe_name = os.path.join('scripts', 'sode-cexamples')
+    import pdb; pdb.set_trace()
+    if isinstance(compiler, Mingw32CCompiler):
+        mingw32_compiler_fix(compiler)
+    compiler.link_executable(cfiles, exe_name, libraries=libs_cexamples)
+    return exe_name + compiler.exe_extension
+
+
+# msvcr90 needs manifest etc. See:
+# http://developer.berlios.de/devlog/akruis/2012/06/10/msvcr90dll-and-mingw/
+# Since this is a standalone program we can just link against the old version
+# of msvcr.
+def mingw32_compiler_fix(compiler):
+    for n, dllname in enumerate(compiler.dll_libraries):
+        if dllname.startswith('msvcr'):
+            compiler.dll_libraries[n] = min(dllname, 'msvcr71')
+            return
+
 
 # Use the README.rst file as the front-page on PyPI
 #with open('README.rst') as README:
