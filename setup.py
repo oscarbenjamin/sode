@@ -106,7 +106,6 @@ def build_examples_cprog(compiler):
     cfiles = ['main.c', 'examples.c', 'randnorm.c', 'solvers.c']
     cfiles = [os.path.join('sode', 'cfiles', p) for p in cfiles]
     exe_name = os.path.join('scripts', 'sode-cexamples')
-    import pdb; pdb.set_trace()
     if isinstance(compiler, Mingw32CCompiler):
         mingw32_compiler_fix(compiler)
     compiler.link_executable(cfiles, exe_name, libraries=libs_cexamples)
