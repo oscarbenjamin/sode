@@ -17,18 +17,41 @@ import numpy
 # it without needing cython (although they still need a c-compiler).
 #
 # Ensuring that the c-files are distributed in the source distribution means
-# adding the names of the c-files to MANIFEST.in and ensuring that the cython
-# generated c-files are up to date by remembering to do:
+# adding the c-files to MANIFEST.in and ensuring that the cython generated
+# c-files are up to date by remembering to do:
 #
-#    $ python setup.py build_ext
+#    $ python setup.py build_ext --inplace
 #    $ python setup.py sdist
 #
+# See here:
+# http://stackoverflow.com/questions/4505747/how-should-i-structure-a-python-package-that-contains-cython-code
 try:
     from Cython.Distutils import build_ext
 except ImportError:
     use_cython = False
 else:
     use_cython = True
+
+
+# These data structures are conditional on
+# 1) Whether cython is installed (ext_modules, cmdclass)
+# 2) Whether running on Windows (scripts/*.bat)
+cmdclass = {}
+ext_modules = []
+scripts = []
+
+
+# :::::::::::::::::::::::::::::
+#   Extension modules
+# :::::::::::::::::::::::::::::
+
+# Need to add the .pyx name if compiling fully with cython or the .c name when
+# compiling from sdist without cython.
+def add_cython_ext_module(modname, cname, cnames=[], **kwargs):
+    # Use cython to cythonise the .pyx files if possible
+    if use_cython:
+        cname = os.path.splitext(cname)[0] + '.pyx'
+    ext_modules.append(Extension(modname, [cname] + cnames, **kwargs))
 
 
 # Need to link with libm and librt on posix but not on Windows.
@@ -42,26 +65,9 @@ else:
     libs_cexamples = []
 
 
-cmdclass = {}
-ext_modules = []
-scripts = []
-
-# Need to add the pyxname of compiling fully with cython or the cname when
-# compiling from sdist without cython.
-def add_cython_ext_module(modname, pyxname, cnames=[], **kwargs):
-    # Use cython to copmile the pyx file
-    if use_cython:
-        ext = Extension(modname, [pyxname] + cnames, **kwargs)
-    # Use distutils to compile the c file
-    else:
-        cname = os.path.splitaxt(pyxname)[0] + '.c'
-        ext = Extension(modname, [cname] + cnames, **kwargs)
-    ext_modules.append(ext)
-
-
 # This extension module is a core part of sode
 add_cython_ext_module('sode.cysode',
-    os.path.join('sode', 'cysode.pyx'),
+    os.path.join('sode', 'cysode.c'),
     [os.path.join('sode', 'cfiles', 'randnorm.c')],
     include_dirs = [numpy.get_include(), '.'],
     libraries = libs_cysode,
@@ -70,27 +76,37 @@ add_cython_ext_module('sode.cysode',
 
 # This extension module is for the examples
 add_cython_ext_module('sode.examples.cyfiles.examples',
-    os.path.join('sode', 'examples', 'cyfiles', 'examples.pyx'),
+    os.path.join('sode', 'examples', 'cyfiles', 'examples.c'),
     include_dirs = [numpy.get_include(), '.'],
     libraries = libs_cyexamples,
 )
 
 
+# ::::::::::::::::::::::::::::::::
+#   Scripts
+# ::::::::::::::::::::::::::::::::
+
 # Executable entry points in scripts
-scripts = [
-    'scripts/sode',
-    'scripts/sode-pyexamples',
-    'scripts/sode-cyexamples',
-]
+scripts = ['sode', 'sode-pyexamples', 'sode-cyexamples']
+scripts_dir = 'scripts'
+
+
+# These .bat files are needed so that Windows users can run the scripts
+# without the .py extension. Giving the scripts .py extensions can cause
+# problems with stdin/stdout redirection on Windows
+# http://support.microsoft.com/default.aspx?kbid=321788
 if 'win' in sys.platform:
-    scripts.extend([
-        'scripts/sode.bat',
-        'scripts/sode-cyexamples.bat',
-        'scripts/sode-pyexamples.bat',
-    ])
+    scripts.extend([sname + '.bat' for sname in scripts])
+
+scripts = [os.path.join(scripts_dir, sname) for sname in scripts]
 
 
-# We also want to build the standalone c program for the examples
+# ::::::::::::::::::::::::::::::::
+#   Standalone c program
+# ::::::::::::::::::::::::::::::::
+
+# monkey patch build_ext to also build a standalone c program
+# http://mail.python.org/pipermail/distutils-sig/2009-September/013216.html
 class MonkeyPatch_build_ext(build_ext):
     def run(self):
         global scripts
@@ -103,11 +119,13 @@ cmdclass['build_ext'] = MonkeyPatch_build_ext
 
 # We also need to build the examples c-program
 def build_examples_cprog(compiler):
-    cfiles = ['main.c', 'examples.c', 'randnorm.c', 'solvers.c']
-    cfiles = [os.path.join('sode', 'cfiles', p) for p in cfiles]
-    exe_name = os.path.join('scripts', 'sode-cexamples')
     if isinstance(compiler, Mingw32CCompiler):
         mingw32_compiler_fix(compiler)
+
+    cfiles = ['main.c', 'examples.c', 'randnorm.c', 'solvers.c']
+    cfiles = [os.path.join('sode', 'cfiles', p) for p in cfiles]
+    exe_name = os.path.join(scripts_dir, 'sode-cexamples')
+
     compiler.link_executable(cfiles, exe_name, libraries=libs_cexamples)
     return exe_name + compiler.exe_extension
 
@@ -122,6 +140,10 @@ def mingw32_compiler_fix(compiler):
             compiler.dll_libraries[n] = min(dllname, 'msvcr71')
             return
 
+
+# :::::::::::::::::::::::::::::::
+#   Bring it all together
+# :::::::::::::::::::::::::::::::
 
 # Use the README.rst file as the front-page on PyPI
 #with open('README.rst') as README:
