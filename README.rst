@@ -7,8 +7,10 @@ SODE is a python/cython library for generating numerical solutions to Stochastic
 
 Setting up the sode-module
 --------------------------1. Compile C and Cython code:
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~To compile the C and Cython code, you need to type in the terminal:$ cd /path/to/sode$ python setup.py build_ext --inplace$ cd sode/cfiles$ ./build.sh2. Run the sode module
-~~~~~~~~~~~~~~~~~~~~~~Run the following commands (every time), type in the terminal:$ cd /path/to/sode$ . ./addpath.sh   # note: this line begins with a "." followed by a space " "3. Run the examples
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~To compile the C and Cython code, you need to type in the terminal::
+    $ cd /path/to/sode    $ python setup.py build_ext --inplace    $ cd sode/cfiles    $ ./build.sh2. Run the sode module
+~~~~~~~~~~~~~~~~~~~~~~Run the following commands (every time), type in the terminal:
+$ cd /path/to/sode$ . ./addpath.sh   # note: this line begins with a "." followed by a space " "3. Run the examples
 ~~~~~~~~~~~~~~~~~~~Type in the terminal:$ cd sode/examples$ ./pyexamples.py solve --plot4. Summary (regular use of the module)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Type in the terminal:$ cd sode$ . ./addpath.sh$ cd sode/examples$ ./pyexamples.py solve --plot5. Help and specific simulations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Type in the terminal, for a specific simulation of the tanmult-system:$ ./pyexamples.py -h$ ./pyexamples.py solve -h$ ./pyexamples.py solve -s tanmult –pTroubleshooting---------------Check which version of Python is running:Method 1:$ which pythonMethod 2:$ python>>> import sys>>> sys.version_info>>> sys.executableIn case these methods provide refer to different versions, ensure that a correct version of Python is running by typing in the terminal (before you run the set-up):$ export PATH="/Library/Frameworks/Python.framework/Versions/7.2/Resources/Python.app/Contents/MacOS:${PATH}"Check which version of Cython is running:$ cython --version$ cython.py –versionDownload the opster moduleDownload: http://pypi.python.org/pypi/opsterMAC OSX
