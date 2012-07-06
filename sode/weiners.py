@@ -4,7 +4,10 @@
 # script is called when sode is run at the cmd line.
 
 
+import sys
+
 from sode.pysode import SODE
+from sode.script import Script
 
 
 class Weiner(SODE):
@@ -28,8 +31,10 @@ class Weiner(SODE):
     def exact(self, x0, t, Wt):
         return (x0 + self.mu * t) + self.sigma * Wt
 
+
+# Use sode.script to create a command line interface for this system
+main = Script(Weiner).main
+
+
 if __name__ == "__main__":
-    import sys
-    from sode.script import Script
-    weinerscript = Script(Weiner)
-    weinerscript.main(sys.argv[1:])
+    main(sys.argv[1:])

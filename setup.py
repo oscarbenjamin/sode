@@ -161,7 +161,7 @@ def mingw32_compiler_fix(compiler):
 setup(
     # First the metadata
     name = 'sode',
-    version = '0.0.1',
+    version = '0.0.3',
     author = 'Oscar Benjamin',
     author_email = 'oscar.j.benjamin@gmail.com',
     url = 'https://github.com/oscarbenjamin/sode',
