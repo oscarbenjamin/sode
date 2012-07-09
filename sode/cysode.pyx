@@ -60,10 +60,12 @@ cdef class Vector:
 cdef class SODE:
 
     cdef readonly Int _nvars
-    cdef public dict _sys_opts
 
     def __cinit__(self):
         self._nvars = -1
+
+    def get_x0(self):
+        return list(self._x0)
 
     cpdef _cy_drift(self, Vector a, Vector x, Real t):
         raise NotImplementedError('Subclasses should define this')
@@ -91,7 +93,7 @@ cdef class SODE:
         sqrtdt = math.sqrt(dt)
 
         # Copy in the initial state
-        for i in range(self.nvars):
+        for i in range(self._nvars):
             x[i] = x1[i]
 
         # Main loop
@@ -105,7 +107,7 @@ cdef class SODE:
             t = tnext
 
         # Copy out the final state
-        for i in range(self.nvars):
+        for i in range(self._nvars):
             x2[i] = x[i]
 
     cdef void _solve_EM(self, Vector x1, Real t1, Vector x2,
@@ -114,13 +116,19 @@ cdef class SODE:
         cdef Int i
         self._cy_drift(a, x1, t1)
         self._cy_diffusion(b, x1, t1)
-        for i in range(self.nvars):
+        for i in range(self._nvars):
             x2[i] = x1[i] + a[i] * dt + b[i] * sqrtdt * RANDNORM_NORMAL()
+
+    def get_description(self):
+        return 'No description fot SODE instances'
 
 cdef class SODE_test(SODE):
 
+    cdef public list _x0
+
     def __cinit__(self):
         self._nvars = 2
+        self._x0 = [1, 0]
 
     cpdef _cy_drift(self, Vector a, Vector x, Real t):
         a[0] = x[1]
@@ -128,6 +136,9 @@ cdef class SODE_test(SODE):
 
     cpdef _cy_diffusion(self, Vector b, Vector x, Real t):
         b[0] = b[1] = 0.01
+
+    def get_variables(self):
+        return ['x', 'y']
 
 cdef class CYSODE:
 

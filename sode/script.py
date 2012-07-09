@@ -11,6 +11,7 @@ import numpy as np
 
 from sode.opster import dispatch
 from sode.pysode import SODE
+from sode.cysode import CYSODE
 from sode.algos import solve, solve_bm, BrownianMotion
 from sode.io import load_csv, save_csv
 
@@ -401,7 +402,8 @@ class Script(object):
         sysinst = self.make_sode(syskwargs, **sysopts)
 
         # sysinst.save_csv stores this:
-        sysinst._sys_opts = sysopts, args
+        if isinstance(sysinst, (SODE, CYSODE)):
+            sysinst._sys_opts = sysopts, args
         return sysinst
 
     def plot_solution(self, ax, t, Xt, linestr, label=None, **opts):
