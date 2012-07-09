@@ -5,6 +5,7 @@
 import cython
 
 from libc cimport math
+from libc.stdlib cimport malloc, free
 
 import numpy as np
 cimport numpy as np
@@ -30,6 +31,103 @@ cdef extern from "cfiles/randnorm.h":
 randnorm_seed(RANDNORM_SEED_PID_TIME)
 
 DTYPE = np.float64
+
+ctypedef np.float64_t Real
+ctypedef unsigned int Int
+
+cdef class Vector:
+
+    cdef Real* data
+    cdef Int length
+
+    def __cinit__(self, Int length):
+        self.length = length
+        self.data = <Real*>malloc(length * sizeof(Real))
+        if self.data is NULL:
+            raise MemoryError()
+
+    def __dealloc__(self):
+        if self.data is not NULL:
+            free(self.data)
+            self.data = NULL
+
+    def __setitem__(self, Int index, Real val):
+        self.data[index] = val
+
+    def __getitem__(self, Int index):
+        return self.data[index]
+
+cdef class SODE:
+
+    cdef readonly Int _nvars
+    cdef public dict _sys_opts
+
+    def __cinit__(self):
+        self._nvars = -1
+
+    cpdef _cy_drift(self, Vector a, Vector x, Real t):
+        raise NotImplementedError('Subclasses should define this')
+
+    cpdef _cy_diffusion(self, Vector b, Vector x, Real t):
+        raise NotImplementedError('Subclasses should define this')
+
+    def exact(self, x, t, Wt):
+        raise NotImplementedError('Subclasses should define this')
+
+    # This is a temporary stopgap
+    cpdef solveto(self, np.ndarray[Real, ndim=1] x1, Real t1,
+                        np.ndarray[Real, ndim=1] x2, Real t2, Real dtmax):
+        cdef t, tnext, dt, sqrtdt
+        cdef Vector a, b, x
+
+        # Allocate temporary memory
+        a = Vector(self._nvars)
+        b = Vector(self._nvars)
+        x = Vector(self._nvars)
+
+        # Prepare for loop
+        t = tnext = t1
+        dt = dtmax
+        sqrtdt = math.sqrt(dt)
+
+        # Copy in the initial state
+        for i in range(self.nvars):
+            x[i] = x1[i]
+
+        # Main loop
+        while t < t2:
+            tnext = t + dt
+            if tnext > t2:
+                tnext = t2
+                dt = t2 - t
+                sqrtdt = math.sqrt(dt)
+            self._solve_EM(x, t, x, dt, sqrtdt, a, b)
+            t = tnext
+
+        # Copy out the final state
+        for i in range(self.nvars):
+            x2[i] = x[i]
+
+    cdef void _solve_EM(self, Vector x1, Real t1, Vector x2,
+                              Real dt, Real sqrtdt,
+                              Vector a, Vector b):
+        cdef Int i
+        self._cy_drift(a, x1, t1)
+        self._cy_diffusion(b, x1, t1)
+        for i in range(self.nvars):
+            x2[i] = x1[i] + a[i] * dt + b[i] * sqrtdt * RANDNORM_NORMAL()
+
+cdef class SODE_test(SODE):
+
+    def __cinit__(self):
+        self._nvars = 2
+
+    cpdef _cy_drift(self, Vector a, Vector x, Real t):
+        a[0] = x[1]
+        a[1] = - x[0]
+
+    cpdef _cy_diffusion(self, Vector b, Vector x, Real t):
+        b[0] = b[1] = 0.01
 
 cdef class CYSODE:
 
@@ -107,6 +205,21 @@ cdef class CYSODE:
     set_parameter   = pysode._set_parameter
     get_description = pysode._get_description
 
+
+cdef class CYSODE_test(SODE):
+
+    parameters = ()
+    variables = (('x', 1), ('y', 0))
+
+    cdef public parameter x
+    cdef public parameter y
+
+    cpdef _cy_drift(self, Vector a, Vector x, Real t):
+        a[0] = x[1]
+        a[1] = - x[0]
+
+    cpdef _cy_diffusion(self, Vector b, Vector x, Real t):
+        b[0] = b[1] = 0.01
 
 cdef class CYSODENetwork(CYSODE):
 
