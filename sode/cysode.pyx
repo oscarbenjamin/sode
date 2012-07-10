@@ -51,26 +51,54 @@ cdef class Vector:
             free(self.data)
             self.data = NULL
 
+    def __len__(self):
+        return self.length
+
     def __setitem__(self, Int index, Real val):
         self.data[index] = val
 
     def __getitem__(self, Int index):
         return self.data[index]
 
+    def aslist(self):
+        return [self[n] for n in range(self.length)]
+
 cdef class SODE:
 
     cdef readonly Int _nvars
+    cdef list _variables
+    cdef _x0
+    cdef readonly int _init
 
     def __cinit__(self):
         self._nvars = -1
+        self._x0 = []
+        self._variables = []
+        self._init = False
+
+    cpdef _set_variables(self, names, values):
+        assert len(names) == len(values), 'len(names) != len(values)'
+        self._nvars = <Int>len(names)
+        self._variables = list(names)
+        self._x0 = list([float(v) for v in values])
+        self._init = True
+
+    cpdef _get_variables(self):
+        return list(self._variables)
 
     def get_x0(self):
         return list(self._x0)
 
-    cpdef _cy_drift(self, Vector a, Vector x, Real t):
+    def get_description(self):
+        return 'No description for SODE instances'
+
+    def get_variables(self):
+        return list(self._variables)
+
+    cpdef _drift(self, Vector a, Vector x, Real t):
         raise NotImplementedError('Subclasses should define this')
 
-    cpdef _cy_diffusion(self, Vector b, Vector x, Real t):
+    cpdef _diffusion(self, Vector b, Vector x, Real t):
         raise NotImplementedError('Subclasses should define this')
 
     def exact(self, x, t, Wt):
@@ -81,6 +109,9 @@ cdef class SODE:
                         np.ndarray[Real, ndim=1] x2, Real t2, Real dtmax):
         cdef t, tnext, dt, sqrtdt
         cdef Vector a, b, x
+
+        if not self._init:
+            raise RuntimeError('Not initialised yet')
 
         # Allocate temporary memory
         a = Vector(self._nvars)
@@ -114,31 +145,22 @@ cdef class SODE:
                               Real dt, Real sqrtdt,
                               Vector a, Vector b):
         cdef Int i
-        self._cy_drift(a, x1, t1)
-        self._cy_diffusion(b, x1, t1)
+        self._drift(a, x1, t1)
+        self._diffusion(b, x1, t1)
         for i in range(self._nvars):
             x2[i] = x1[i] + a[i] * dt + b[i] * sqrtdt * RANDNORM_NORMAL()
 
-    def get_description(self):
-        return 'No description fot SODE instances'
-
 cdef class SODE_test(SODE):
 
-    cdef public list _x0
+    def __init__(self):
+        self._set_variables(['x', 'y'], [1, 0])
 
-    def __cinit__(self):
-        self._nvars = 2
-        self._x0 = [1, 0]
-
-    cpdef _cy_drift(self, Vector a, Vector x, Real t):
+    cpdef _drift(self, Vector a, Vector x, Real t):
         a[0] = x[1]
         a[1] = - x[0]
 
-    cpdef _cy_diffusion(self, Vector b, Vector x, Real t):
+    cpdef _diffusion(self, Vector b, Vector x, Real t):
         b[0] = b[1] = 0.01
-
-    def get_variables(self):
-        return ['x', 'y']
 
 cdef class CYSODE:
 
@@ -216,21 +238,6 @@ cdef class CYSODE:
     set_parameter   = pysode._set_parameter
     get_description = pysode._get_description
 
-
-cdef class CYSODE_test(SODE):
-
-    parameters = ()
-    variables = (('x', 1), ('y', 0))
-
-    cdef public parameter x
-    cdef public parameter y
-
-    cpdef _cy_drift(self, Vector a, Vector x, Real t):
-        a[0] = x[1]
-        a[1] = - x[0]
-
-    cpdef _cy_diffusion(self, Vector b, Vector x, Real t):
-        b[0] = b[1] = 0.01
 
 cdef class CYSODENetwork(CYSODE):
 
