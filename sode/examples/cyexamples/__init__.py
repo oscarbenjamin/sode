@@ -8,10 +8,9 @@
 
 from sode.script import MultiScript
 
-from cyfiles.examples import (Weiner, Weiner2, LinearAdditive2D,
-                              LinearMultiplicative,
-                              SinusoidalMultiplicative,
-                              TangentMultiplicative)
+from sode.examples.cyexamples.examples import (
+    Weiner, Weiner2, LinearAdditive2D, LinearMultiplicative,
+    SinusoidalMultiplicative, TangentMultiplicative)
 
 sysdict = {
     None:'weiner',

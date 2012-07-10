@@ -28,24 +28,24 @@ for sys in\
         echo ----------- Example $sys -----------
         echo
         echo ----- In Pure python $t2 secs
-        time ./pyexamples.py solve --system-type=$sys --t1=$t1 --t2=$t2\
+        time sode-pyexamples solve --system-type=$sys --t1=$t1 --t2=$t2\
                                    --dtmax=$dtmax --dtout=$dtout > .tmppy
         echo
         echo ----- In Cython      $t2 secs
-        time ./cyexamples.py solve --system-type=$sys --t1=$t1 --t2=$t2\
+        time sode-cyexamples solve --system-type=$sys --t1=$t1 --t2=$t2\
                                    --dtmax=$dtmax --dtout=$dtout > .tmpcy
         echo
         echo ----- In Pure c      $t2 secs
-        time ./cexamples.exe $sys $t1 $t2 $dtmax $dtout > .tmpc
+        time sode-cexamples $sys $t1 $t2 $dtmax $dtout > .tmpc
         echo
 
         echo
         echo ----- In Cython      $t2l secs
-        time ./cyexamples.py solve --system-type=$sys --t1=$t1 --t2=$t2l\
+        time sode-cyexamples solve --system-type=$sys --t1=$t1 --t2=$t2l\
                                    --dtmax=$dtmax --dtout=$dtout > .tmpcy
         echo
         echo ----- In Pure c      $t2l secs
-        time ./cexamples.exe $sys $t1 $t2l $dtmax $dtout > .tmpc
+        time sode-cexamples $sys $t1 $t2l $dtmax $dtout > .tmpc
         echo
 
 done

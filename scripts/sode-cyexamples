@@ -1,0 +1,6 @@
+#!/usr/bin/env python
+#
+# executable front end to the sode.examples.cyexamples module
+import sys
+from sode.examples.cyexamples import main
+main(sys.argv[1:])
