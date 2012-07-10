@@ -10,5 +10,16 @@ import sys
 from sode.cysode import SODE_test, CYSODE_test
 from sode.script import Script, MultiScript
 
-main = MultiScript({None: 'sode', 'sode':SODE_test, 'cysode':CYSODE_test}).main
+class SODE_test_py(SODE_test):
+    def _cy_drift(self, a, x, t):
+        a[0] = x[0]
+        a[1] = x[1]
+
+systems = {
+    None: 'sode',
+    'sode':SODE_test,
+    'cysode':CYSODE_test,
+    'py':SODE_test_py,
+}
+main = MultiScript(systems).main
 main(sys.argv[1:])
