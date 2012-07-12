@@ -7,7 +7,7 @@
 
 import sys
 
-from sode.cysode import SODE_test, SODE
+from sode.cysode import SODE
 from sode.script import Script, MultiScript
 
 class SODE_test_py(SODE):
@@ -22,9 +22,14 @@ class SODE_test_py(SODE):
     def _diffusion(self, b, x, t):
         b[0] = b[1] = 0.01
 
+sys = SODE_test_py()
+
+print sys._eval_drift(sys.get_x0(), 0)
+print sys._eval_diffusion(sys.get_x0(), 0)
+raise
+
 systems = {
-    None: 'test',
-    'test':SODE_test,
+    None: 'py',
     'py':SODE_test_py,
 }
 main = MultiScript(systems).main

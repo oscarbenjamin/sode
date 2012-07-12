@@ -30,15 +30,20 @@ cdef extern from "cfiles/randnorm.h":
         RANDNORM_SEED_PID_TIME
 randnorm_seed(RANDNORM_SEED_PID_TIME)
 
-DTYPE = np.float64
-
-ctypedef np.float64_t Real
-ctypedef unsigned int Int
 
 cdef class Vector:
 
-    cdef Real* data
-    cdef Int length
+    def __len__(self):
+        return self.length
+
+    def __setitem__(self, Int index, Real val):
+        self.data[index] = val
+
+    def __getitem__(self, Int index):
+        return self.data[index]
+
+
+cdef class VectorAlloc(Vector):
 
     def __cinit__(self, Int length):
         self.length = length
@@ -51,24 +56,15 @@ cdef class Vector:
             free(self.data)
             self.data = NULL
 
-    def __len__(self):
-        return self.length
 
-    def __setitem__(self, Int index, Real val):
-        self.data[index] = val
+cdef class VectorView(Vector):
 
-    def __getitem__(self, Int index):
-        return self.data[index]
+    def __cinit__(self, np.ndarray npv):
+        self.length = <Int>npv.size
+        self.data = <Real*>npv.data
 
-    def aslist(self):
-        return [self[n] for n in range(self.length)]
 
 cdef class SODE:
-
-    cdef readonly Int _nvars
-    cdef list _variables
-    cdef _x0
-    cdef readonly int _init
 
     def __cinit__(self):
         self._nvars = -1
@@ -101,6 +97,22 @@ cdef class SODE:
     cpdef _diffusion(self, Vector b, Vector x, Real t):
         raise NotImplementedError('Subclasses should define this')
 
+    def _eval_drift(self, x, t):
+        cdef np.ndarray[Real, ndim=1] xnp = np.array(x, dtype=DTYPE)
+        cdef np.ndarray[Real, ndim=1] anp = np.zeros_like(x)
+        cdef xv = VectorView(xnp)
+        cdef av = VectorView(anp)
+        self._drift(av, xv, t)
+        return anp
+
+    def _eval_diffusion(self, x, t):
+        cdef np.ndarray[Real, ndim=1] xnp = np.array(x, dtype=DTYPE)
+        cdef np.ndarray[Real, ndim=1] bnp = np.zeros_like(x)
+        cdef xv = VectorView(xnp)
+        cdef bv = VectorView(bnp)
+        self._diffusion(bv, xv, t)
+        return bnp
+
     def exact(self, x, t, Wt):
         raise NotImplementedError('Subclasses should define this')
 
@@ -114,9 +126,9 @@ cdef class SODE:
             raise RuntimeError('Not initialised yet')
 
         # Allocate temporary memory
-        a = Vector(self._nvars)
-        b = Vector(self._nvars)
-        x = Vector(self._nvars)
+        a = VectorAlloc(self._nvars)
+        b = VectorAlloc(self._nvars)
+        x = VectorAlloc(self._nvars)
 
         # Prepare for loop
         t = tnext = t1
@@ -150,93 +162,9 @@ cdef class SODE:
         for i in range(self._nvars):
             x2[i] = x1[i] + a[i] * dt + b[i] * sqrtdt * RANDNORM_NORMAL()
 
-cdef class SODE_test(SODE):
 
-    def __init__(self):
-        self._set_variables(['x', 'y'], [1, 0])
-
-    cpdef _drift(self, Vector a, Vector x, Real t):
-        a[0] = x[1]
-        a[1] = - x[0]
-
-    cpdef _diffusion(self, Vector b, Vector x, Real t):
-        b[0] = b[1] = 0.01
-
-cdef class CYSODE:
-
-    def __cinit__(self):
-        self.nvars = 0
-        self._owned = 0
-
-    def __init__(self, **kwargs):
-        self._init_pv(self.parameters, self.variables)
-        self._init_kw(**kwargs)
-
-    cpdef drift(self, np.ndarray[DTYPE_t, ndim=1] a,
-                      np.ndarray[DTYPE_t, ndim=1] x, double t):
-        self._drift(<double*>a.data, <double*>x.data, t)
-        return a
-
-    cpdef diffusion(self, np.ndarray[DTYPE_t, ndim=1] b,
-                          np.ndarray[DTYPE_t, ndim=1] x, double t):
-        self._diffusion(<double*>b.data, <double*>x.data, t)
-        return b
-
-    cdef void _drift(self, double* a, double* x, double t):
-        raise NotImplementedError("Subclasses need to override this.")
-
-    cdef void _diffusion(self, double* b, double* x, double t):
-        raise NotImplementedError("Subclasses need to override this.")
-
-    def exact(self, x, t, Wt):
-        raise NotImplementedError("Subclasses need to override this.")
-
-    cdef void _solve_EM(self, double* x1, double t1, double* x2, double dt,
-                         double sqrtdt, double *a, double *b):
-        cdef unsigned int i
-        self._drift(a, x1, t1)
-        self._diffusion(b, x1, t1)
-        for i in range(self.nvars):
-            x2[i] = x1[i] + a[i] * dt + b[i] * sqrtdt * RANDNORM_NORMAL()
-
-    cpdef solveto(self, np.ndarray[DTYPE_t, ndim=1] x1, double t1,
-                        np.ndarray[DTYPE_t, ndim=1] x2, double t2, double dtmax):
-        cdef double t = t1, tnext = t, dt = dtmax
-        cdef double sqrtdt = math.sqrt(dt)
-        cdef double temp
-        cdef np.ndarray[DTYPE_t, ndim=1] a = np.zeros(self.nvars, DTYPE)
-        cdef np.ndarray[DTYPE_t, ndim=1] b = np.zeros(self.nvars, DTYPE)
-        cdef np.ndarray[DTYPE_t, ndim=1] x = np.zeros(self.nvars, DTYPE)
-        for i in range(self.nvars):
-            x[i] = x1[i]
-        while t < t2:
-            tnext = t + dt
-            if tnext > t2:
-                tnext = t2
-                dt = t2 - t
-                sqrtdt = math.sqrt(dt)
-            self._solve_EM(<double*>x.data, t, <double*>x.data, dt,
-                           sqrtdt, <double*>a.data, <double*>b.data)
-            t = tnext
-        for i in range(self.nvars):
-            x2[i] = x[i]
-
-    # These functions are recycled from pysode
-    _init_pv        = pysode._init_pv_
-    _init_kw        = pysode._init_kw_
-    _shift_indices  = pysode._shift_indices_
-    _get_var_index  = pysode._get_var_index_
-    _set_var_index  = pysode._set_var_index_
-    _varchk         = pysode._varchk_
-    _parchk         = pysode._parchk_
-    get_variables   = pysode._get_variables
-    get_ic          = pysode._get_ic
-    set_ic          = pysode._set_ic
-    get_x0          = pysode._get_x0
-    get_parameters  = pysode._get_parameters
-    get_parameter   = pysode._get_parameter
-    set_parameter   = pysode._set_parameter
-    get_description = pysode._get_description
+cdef class CYSODE(SODE):
+    pass
 
 
 cdef class CYSODENetwork(CYSODE):
@@ -246,13 +174,13 @@ cdef class CYSODENetwork(CYSODE):
         self._subsysdict = {}
         self._ss_eval = []
 
-    cdef void _drift_subsys(self, double* a, double* x, double t):
+    cdef void _drift_subsys(self, Vector a, Vector x, Real t):
         """Compute drift for subsystems. Subclasses must call this in drift"""
         cdef unsigned int N = len(self._ss_eval)
         for i in range(N):
             (<CYSODE>self._ss_eval[i])._drift(a, x, t)
 
-    cdef void _diffusion_subsys(self, double* b, double* x, double t):
+    cdef void _diffusion_subsys(self, Vector b, Vector x, Real t):
         """Compute diffusion for subsystems. Subclasses must call this in
         diffusion"""
         cdef unsigned int N = len(self._ss_eval)

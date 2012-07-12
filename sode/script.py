@@ -402,8 +402,7 @@ class Script(object):
         sysinst = self.make_sode(syskwargs, **sysopts)
 
         # sysinst.save_csv stores this:
-        if isinstance(sysinst, (SODE, CYSODE)):
-            sysinst._sys_opts = sysopts, args
+        sysinst._sys_opts = sysopts, args
         return sysinst
 
     def plot_solution(self, ax, t, Xt, linestr, label=None, **opts):
