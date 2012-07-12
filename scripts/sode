@@ -3,5 +3,5 @@
 #
 # run sode as a python script.
 import sys
-from sode.weiners import main
+from sode.__main__ import main
 main(sys.argv[1:])
