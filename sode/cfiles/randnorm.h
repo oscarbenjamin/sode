@@ -35,11 +35,9 @@ void randnorm_seed(unsigned int seed);
 
 /* Macros to generate random numbers.*/
 #define RANDNORM_SHR3 (\
-            randnorm_jz=randnorm_jsr,\
             randnorm_jsr^=(randnorm_jsr<<13),\
             randnorm_jsr^=(randnorm_jsr>>17),\
-            randnorm_jsr^=(randnorm_jsr<<5),\
-          randnorm_jz+randnorm_jsr\
+            randnorm_jsr^=(randnorm_jsr<<5)\
         )
 #define RANDNORM_SHR3_MAX ULONG_MAX
 
