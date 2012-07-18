@@ -23,6 +23,9 @@ extern unsigned long randnorm_jz, randnorm_jsr;
 extern long randnorm_hz;
 extern unsigned long randnorm_iz, randnorm_kn[128];
 extern double randnorm_wn[128];
+extern unsigned long randnorm_x, randnorm_y;
+extern unsigned long randnorm_t[256];
+extern unsigned char randnorm_c;
 
 /* Exported functions */
 void randnorm_seed_ziggurat(unsigned long jsrseed);
@@ -41,9 +44,16 @@ void randnorm_seed(unsigned int seed);
         )
 #define RANDNORM_SHR3_MAX ULONG_MAX
 
+#define RANDNORM_SWB (\
+            randnorm_t[randnorm_c+237]=\
+            (randnorm_x=randnorm_t[randnorm_c+15])-\
+            (randnorm_y=randnorm_t[++randnorm_c]+\
+            (randnorm_x<randnorm_y))\
+        )
+
 #define RANDNORM_UNIF (.5 + (signed) RANDNORM_SHR3*.2328306e-9)
 #define RANDNORM_NORMAL() (\
-            randnorm_hz=RANDNORM_SHR3,\
+            randnorm_hz=RANDNORM_SWB,\
             randnorm_iz=randnorm_hz&127,\
           (fabs(randnorm_hz)<randnorm_kn[randnorm_iz])\
                 ? randnorm_hz*randnorm_wn[randnorm_iz] : randnorm_nfix()\

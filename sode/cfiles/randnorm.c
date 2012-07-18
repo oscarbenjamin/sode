@@ -45,6 +45,10 @@ long randnorm_hz;
 unsigned long randnorm_iz, randnorm_kn[128];
 double randnorm_wn[128],randnorm_fn[128];
 
+unsigned long randnorm_t[256];
+unsigned long randnorm_x=0,randnorm_y=0;
+unsigned char randnorm_c=0;
+
 /*
  * First, get a good initial seed. If possible randnorm_seed attempts to use
  * the time in microseconds or nanoseconds and process id in conjunction with
@@ -62,6 +66,10 @@ void randnorm_seed(unsigned int seed) {
     char fname[256];
     seed = (seed != RANDNORM_SEED_PID_TIME) ? seed : initial_seed();
     randnorm_seed_ziggurat(seed);
+    int i;
+    for(i=0; i<256; i++) {
+        randnorm_t[i] = RANDNORM_SHR3;
+    }
     sprintf(fname, ".seed.%u", seed);
     fp = fopen(fname, "w");
     fprintf(fp, "seed file\n\n");
