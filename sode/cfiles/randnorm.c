@@ -18,9 +18,7 @@
 #include <time.h>
 
 /* Debug function needs printf */
-#if RANDNORM_DEBUG
 #include <stdio.h>
-#endif
 
 /* Random seed uses pid and time in us or ns */
 #if WINDOWS
@@ -60,8 +58,14 @@ void randnorm_seed_ziggurat(unsigned long jsrseed);
 
 /* Must be called by programs using randnorm.h */
 void randnorm_seed(unsigned int seed) {
+    FILE *fp;
+    char fname[256];
     seed = (seed != RANDNORM_SEED_PID_TIME) ? seed : initial_seed();
     randnorm_seed_ziggurat(seed);
+    sprintf(fname, ".seed.%u", seed);
+    fp = fopen(fname, "w");
+    fprintf(fp, "seed file\n\n");
+    fclose(fp);
 }
 
 /* Use OS-specific functions to initialise seed if possible */
