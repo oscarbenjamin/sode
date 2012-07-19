@@ -74,6 +74,9 @@ void randnorm_seed(unsigned int seed) {
     fp = fopen(fname, "w");
     fprintf(fp, "seed file\n\n");
     fclose(fp);
+#ifdef RANDNORM_DEBUG
+    randnorm_debug_test();
+#endif /* RANDNORM_DEBUG */
 }
 
 /* Use OS-specific functions to initialise seed if possible */
@@ -222,9 +225,6 @@ void randnorm_seed_ziggurat(unsigned long jsrseed)
         randnorm_fn[i]=exp(-.5*dn*dn);
         randnorm_wn[i]=dn/m1;
     }
-#ifdef RANDNORM_DEBUG
-    randnorm_debug_test();
-#endif /* RANDNORM_DEBUG */
 }
 
 #ifdef RANDNORM_DEBUG
@@ -312,6 +312,10 @@ void randnorm_debug_test()
             RANDNORM_SHR3_MAX, (double)RANDNORM_SHR3_MAX / 2.,
             (((double)RANDNORM_SHR3_MAX * (double)RANDNORM_SHR3_MAX) - 1.) / 12.);
 
+    TEST_RANDNORM_MACRO(unsigned long, "%lu", swb, RANDNORM_SWB,
+                        "uniform integers",
+                        shr3_details);
+
     TEST_RANDNORM_MACRO(unsigned long, "%lu", shr3, RANDNORM_SHR3,
                         "uniform integers",
                         shr3_details);
@@ -320,7 +324,7 @@ void randnorm_debug_test()
                         "uniform reals",
                         "Min: 0 Max: 1 Mean: 0.5 Var: 0.83333333");
 
-    TEST_RANDNORM_MACRO(double, "%lf", normal, RANDNORM_NORMAL,
+    TEST_RANDNORM_MACRO(double, "%lf", normal, RANDNORM_NORMAL(),
                         "standard normals",
                         "Min: -Inf Max: +Inf Mean: 0 Var: 1");
 

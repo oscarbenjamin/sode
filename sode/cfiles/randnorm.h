@@ -38,10 +38,13 @@ void randnorm_seed(unsigned int seed);
 
 /* Macros to generate random numbers.*/
 #define RANDNORM_SHR3 (\
+            randnorm_jz=randnorm_jsr,\
             randnorm_jsr^=(randnorm_jsr<<13),\
             randnorm_jsr^=(randnorm_jsr>>17),\
-            randnorm_jsr^=(randnorm_jsr<<5)\
+            randnorm_jsr^=(randnorm_jsr<<5),\
+          randnorm_jz+randnorm_jsr\
         )
+
 #define RANDNORM_SHR3_MAX ULONG_MAX
 
 #define RANDNORM_SWB (\
@@ -53,7 +56,7 @@ void randnorm_seed(unsigned int seed);
 
 #define RANDNORM_UNIF (.5 + (signed) RANDNORM_SHR3*.2328306e-9)
 #define RANDNORM_NORMAL() (\
-            randnorm_hz=RANDNORM_SWB,\
+            randnorm_hz=RANDNORM_SHR3,\
             randnorm_iz=randnorm_hz&127,\
           (fabs(randnorm_hz)<randnorm_kn[randnorm_iz])\
                 ? randnorm_hz*randnorm_wn[randnorm_iz] : randnorm_nfix()\
