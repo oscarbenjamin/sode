@@ -308,7 +308,7 @@ void randnorm_debug_test()
                         "uniform reals",
                         "Min: 0 Max: 1 Mean: 0.5 Var: 0.83333333");
 
-    TEST_RANDNORM_MACRO(double, "%lf", normal, RANDNORM_NORMAL,
+    TEST_RANDNORM_MACRO(double, "%lf", normal, RANDNORM_NORMAL(),
                         "standard normals",
                         "Min: -Inf Max: +Inf Mean: 0 Var: 1");
 
