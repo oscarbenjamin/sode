@@ -200,5 +200,6 @@ setup(
     ext_modules = ext_modules,
     packages = ['sode', 'sode.examples', 'sode.examples.pyexamples',
                                          'sode.examples.cyexamples'],
+    package_data = {'sode':['cysode.pxd']},
     scripts = scripts
 )
